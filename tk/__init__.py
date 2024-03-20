@@ -542,8 +542,6 @@ class Event:
             return
         return self["handler"]()
     def __getitem__(self, item):
-        if item == "widget" and "widget" not in self._data.keys():
-            print(self._data)
         return self._data[item]
     def __setitem__(self, key, value):
         self._data[key] = value
@@ -629,7 +627,7 @@ class Event:
 class _EventRegistry:
     """
     Private event implementation.
-    Handels event priorities.
+    Handles event priorities.
     Used for debugging events.
     """
     def __init__(self, ins):
@@ -703,7 +701,7 @@ class _EventHandler:
         self.event = event
         #print(self.event.getWidget()["registry"], self.event.getWidget())
     def __repr__(self):
-        return "EventHandler("+"{widgetType:\""+self.event["widget"].getType().__name__+"\", eventType:"+str(self.event["eventType"])+", ID:"+self.event["widget"]["id"]+"}) bind on: \n\t-"+"\n\t-".join([str(i) for i in self.event["widget"]["registry"].getRegisteredEvents(self.event["eventType"])])
+        return "EventHandler("+"{widgetType:\""+type(self.event["widget"]).__name__+"\", eventType:"+str(self.event["eventType"])+", ID:"+self.event["widget"]["id"]+"}) bind on: \n\t-"+"\n\t-".join([str(i) for i in self.event["widget"]["registry"].getRegisteredEvents(self.event["eventType"])])
     def __getitem__(self, item):
         return self.event[item]
     def __setitem__(self, key, value):
@@ -715,7 +713,7 @@ class _EventHandler:
             info = f"""
 # Could not call bound function!
 # BindTo:    '{"" if not hasattr(event["func"], "__self__") else event["func"].__self__.__class__.__name__ + "."}{event["func"] if not hasattr(event["func"], "__name__") else event["func"].__name__}'
-# Widget:    '{event["widget"].getType().__name__}'
+# Widget:    '{type(event["widget"]).__name__}'
 # EventType: {event["eventType"]}
 # priority:  {event["priority"]}
 # args:      {event["args"]}
@@ -731,8 +729,7 @@ class _EventHandler:
         args = args[0] if len(args) == 1 else list(args)
         event = None
         out = None
-        cancTk = False
-        #print(self.event._data)
+        if "widget" not in self.event._data.keys(): return #  event already dropped
         for event in self.event["widget"]["registry"].getCallables(self.event["eventType"]): #TODO get only the output of the last called func. problem? maybe priorities
             func = event["func"]
             event["tkArgs"] = args
@@ -752,15 +749,11 @@ class _EventHandler:
             else:
                 try: out = func()
                 except: raiseError()
-            if not len(event._data): return False # destoyed
+            if not len(event._data): return False # destroyed
             if event["afterTriggered"] is not None: event["afterTriggered"](event, out)
         # After all events are processed
-        if event["forceReturn"] is None:
-            #if event["setTkEventCanceled"]:
-            #    if cancTk: return "break"
-            #    else: return out
-            pass
-        else: return event["forceReturn"]
+        if event["forceReturn"] is not None:
+            return event["forceReturn"]
     @staticmethod
     def setEventDebug(b:bool):
         _EventHandler.DEBUG = b
@@ -2180,7 +2173,7 @@ class Widget:
         self._place(x, y, width, height, anchor)
         return self
     def _destroy(self):
-        assert not self["destroyed"], f"Widget {self.getType()} {self.getID()} is already destroyed!"
+        assert not self["destroyed"], f"Widget {type(self)} {self.getID()} is already destroyed!"
         self["registry"].unregisterAll()
         self["tkMaster"]._unregisterOnResize(self)
         if WIDGET_DELETE_DEBUG: print(type(self["master"]), "->", type(self))
@@ -2348,7 +2341,7 @@ class WidgetGroup:
         """
         if w in self._widgets:
             self._widgets.remove(w)
-            if WIDGET_DELETE_DEBUG: TextColor.print(f"-{len(self._widgets)} {type(widg)}", "red")
+            if WIDGET_DELETE_DEBUG: TextColor.print(f"-{len(self._widgets)} {type(w)}", "red")
     def addCommand(self, function_name:str, *args, ignoreErrors=False, onlyFor=None):
         """
         Given function is executed on if Widget is created with this Group.
@@ -4317,6 +4310,7 @@ class Notebook(Widget):
         index = self["widget"].index("@%d,%d" % (event.x, event.y))
         self._name = self["widget"].tab(index, "text")
         _event = _call(self["runnable"])
+        if not len(_event._data): return
         if self._active == index and (self["runnable"] is None or (self["runnable"] is not None and not _event["setCanceled"])):
             if self["destroyed"]: return
             self["widget"].forget(index)
@@ -4389,8 +4383,6 @@ class CanvasObject:
         return self._data[item]
     def __setitem__(self, key, value):
         self._data[key] = value
-    def getType(self):
-        return type(self._ins)
     def bind(self, func, event: Union[EventType, Key, Mouse], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         if event == "CANCEL": return
         assert self["objID"] is not None, "Render canvasObj before binding!"
