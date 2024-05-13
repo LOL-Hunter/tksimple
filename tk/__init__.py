@@ -1,4 +1,4 @@
-import tkinter.simpledialog as simd
+﻿import tkinter.simpledialog as simd
 import tkinter.colorchooser as colorChooser
 import tkinter.messagebox as msg
 import tkinter.filedialog as fd
@@ -15,20 +15,12 @@ import random as r
 import time as t
 import string
 import os
-try:
-    from ..geometry import Location2D, _map, Rect
-    from ..text import MsgText, TextColor
-except ImportError:
-    from pysettings.geometry import Location2D, _map, Rect
-    from pysettings.text import MsgText, TextColor
 
-## TEMP ##
-from pysettings.text import TextColor
 
 #TODO parameter description in __init__
 #TODO parameter type in __init__
 #TODO event value in bind
-#TODO Remove pysettings.text
+#TODO Remove pysettings.text package
 #TODO write description
 #TODO TextEntry.placeRelative implementation
 
@@ -42,12 +34,159 @@ Dialog
 
 Widgets:
 
-
-
-
-
-
 """
+
+
+class Location2D:
+    def __init__(self, *args, **kwargs):
+        self.copy = self.clone
+        if len(args) == 0 and len(kwargs.values()) == 0:
+            self._coords = {"x":0, "y":0}
+        elif len(args) == 0:
+            self._coords = kwargs
+        else:
+            if len(args) == 2:
+                self._coords = {"x":args[0], "y":args[1]}
+            else:
+                args = args[0]
+                if isinstance(args, Location2D):
+                    self._coords = args._coords.copy()
+                elif type(args) == tuple and len(args) > 1:
+                    self._coords = {"x": args[0], "y": args[1]} # ((1, 2), )
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            item = ["x", "y"][item]
+        return self._coords[item]
+    def __setitem__(self, key, value):
+        self._coords[key] = value
+    def __eq__(self, other):
+        if isinstance(other, Location2D):
+            return other.get() == self.get()
+        elif isinstance(other, tuple):
+            return other == self.get()
+        else:
+            return False
+    def __ne__(self, other):
+        if isinstance(other, Location2D):
+            return other.get() != self.get()
+        elif isinstance(other, tuple):
+            return other != self.get()
+        else:
+            return True
+    def __add__(self, other):
+        return Location2D(self.getX()+other.getX(), self.getY()+other.getY())
+    def __repr__(self):
+        return "Location2D("+str(self["x"])+", "+str(self["y"])+")"
+    def __len__(self):
+        return 2
+    def toInt(self):
+        self._coords["x"] = int(self._coords["x"])
+        self._coords["y"] = int(self._coords["y"])
+        return self
+    @property
+    def x(self):
+        return self.getX()
+    @x.setter
+    def x(self, x):
+        self.setX(x)
+    @property
+    def y(self):
+        return self.getY()
+    @y.setter
+    def y(self, y):
+        self.setY(y)
+    def getX(self):
+        return self._coords["x"]
+    def getY(self):
+        return self._coords["y"]
+    def setX(self, x):
+        self._coords["x"] = x
+        return self
+    def setY(self, y):
+        self._coords["y"] = y
+        return self
+    def change(self, x=0.0, y=0.0):
+        if isinstance(x, Location2D): x, y = x.get()
+        self._coords["x"] = self.getX() + x
+        self._coords["y"] = self.getY() + y
+        return self
+    def get(self):
+        return tuple(self._coords.values())
+    def set(self, *L):
+        if len(L) == 1:
+            L = L[0]
+        if isinstance(L, Location2D):
+            x, y = L.get()
+        else:
+            x, y = L
+        self._coords["x"] = x
+        self._coords["y"] = y
+    def clone(self):
+        return Location2D(x=self.getX(), y=self.getY())
+    def toString(self, prefix=True):
+        if prefix:
+            return "X: "+str(self.getX())+"Y: "+str(self.getY())
+        else:
+            return str(self.getX()) + str(self.getY())
+def _map(value, iMin, iMax, oMin=None, oMax=None):
+    if oMin is None and oMax is None:
+        oMax = iMax
+        iMax = iMin
+        iMin = 0
+        oMin = 0
+    return int((value-iMin) * (oMax-oMin) / (iMax-iMin) + oMin)
+class Rect:
+    def __init__(self, loc1, loc2):
+        self.ratio = None
+        self.loc1 = loc1
+        self.loc2 = loc2
+    @staticmethod
+    def fromLocLoc(loc1:Location2D, loc2:Location2D):
+        return Rect(loc1, loc2)
+    @staticmethod
+    def fromLocWidthHeight(loc:Location2D, width:int|float=0, height:int|float=0):
+        return Rect(loc, loc.clone().change(x=width, y=height))
+    """@staticmethod
+    def fromTkWidget(w):
+        return Rect(w.)"""
+    def __repr__(self):
+        return "Rect("+str(self.loc1)+", "+str(self.loc2)+")"
+    @property
+    def width(self):
+        return self.getWidth()
+    @property
+    def height(self):
+        return self.getHeight()
+    @property
+    def size(self):
+        return self.getWidth(), self.getHeight()
+    def clone(self):
+        return Rect(self.loc1.clone(), self.loc2.clone())
+    def getLoc1(self):
+        return Location2D(min(self.loc1.getX(), self.loc2.getX()),  min(self.loc1.getY(), self.loc2.getY()))
+    def getWidth(self):
+        return max(self.loc1.getX(), self.loc2.getX()) - min(self.loc1.getX(), self.loc2.getX())
+    def getHeight(self):
+        return max(self.loc1.getY(), self.loc2.getY()) - min(self.loc1.getY(), self.loc2.getY())
+    def collisionWithPoint(self, loc):
+        return loc.getX() >= min(self.loc1.getX(), self.loc2.getX()) and loc.getX() <= max(self.loc1.getX(), self.loc2.getX()) and loc.getY() >= min(self.loc1.getY(), self.loc2.getY()) and loc.getY() <= max(self.loc1.getY(), self.loc2.getY())
+    def collisionWithRect(self, rect):
+        rect2 = Rect(Location2D(rect.loc1.getX()-self.getWidth(), rect.loc1.getY()-self.getHeight()), Location2D(rect.loc1.getX()+rect.getWidth(), rect.loc1.getY()+rect.getHeight()))
+        return rect2.collisionWithPoint(self.loc1)
+    def resizeToRectWithRatio(self, rect, offset=0, updateRatio=False, upLeftFix=True):
+        if updateRatio or self.ratio is None:
+            self.ratio = self.getWidth()/self.getHeight()
+        newWidth = rect.getWidth()-offset*2
+        newHeight = (1/self.ratio) * newWidth
+        if newHeight + offset*2 > rect.getHeight():
+            newHeight = rect.getHeight() - offset*2
+            newWidth = self.ratio * newHeight
+        if upLeftFix:
+            self.loc2 = Location2D(self.loc1.getX()+newWidth, self.loc1.getY()+newHeight)
+        else:
+            self.loc1 = Location2D(rect.loc1.getX()+offset, rect.loc1.getY()+offset)
+            self.loc2 = Location2D(rect.loc1.getX()+newWidth, rect.loc1.getY()+newHeight)
+
 class TKExceptions:
     class InvalidFileExtention(Exception):
         pass
@@ -128,17 +267,11 @@ class Color(Enum):
     MAGENTA = "magenta"
     ORANGE = "#CB772F"
     @staticmethod
-    def rgb(r, g, b):
+    def rgb(r:int, g:int, b:int):
         return '#%02x%02x%02x' % (r, g, b)
     @staticmethod
     def hex(hex:str):
         return hex
-    @staticmethod
-    def randomRGB():
-        return Color.rgb(r.randint(0, 255), r.randint(0, 255), r.randint(0, 255))
-    @staticmethod
-    def randomColor():
-        return r.choice(list(Color))
 class Wrap(Enum):
     NONE = "none"
     WORD = "word"
@@ -1239,7 +1372,7 @@ class Tk:
         except Exception as e:
             if WIDGET_DELETE_DEBUG or True:
                 print("FAIL!", e)
-                TextColor.print(format_exc(), "red")
+                print(format_exc())
             return False
     def update(self):
         """
@@ -2162,9 +2295,9 @@ class Widget:
         if isinstance(x, Location2D):
             x, y = x.get()
         if isinstance(x, Rect):
-            x, y = x.getLoc1().get()
-            width = x.getWidth()
             height = x.getHeight()
+            width = x.getWidth()
+            x, y = x.getLoc1().get()
         x = int(round(x, 0))
         y = int(round(y, 0))
         self._get().place_forget()
@@ -2347,7 +2480,7 @@ class WidgetGroup:
             setattr(self, method, _WidgetGroupMethod(self, method))
         self._widgets.append(w)
         self.executeCommands(w)
-        if WIDGET_DELETE_DEBUG: TextColor.print(f"+{len(self._widgets)} {type(w)}", "green")
+        if WIDGET_DELETE_DEBUG: print(f"+{len(self._widgets)} {type(w)}")
     def remove(self, w):
         """
         Removes widget from this group.
@@ -2357,7 +2490,7 @@ class WidgetGroup:
         """
         if w in self._widgets:
             self._widgets.remove(w)
-            if WIDGET_DELETE_DEBUG: TextColor.print(f"-{len(self._widgets)} {type(w)}", "red")
+            if WIDGET_DELETE_DEBUG: print(f"-{len(self._widgets)} {type(w)}")
     def addCommand(self, function_name:str, *args, ignoreErrors=False, onlyFor=None):
         """
         Given function is executed on if Widget is created with this Group.
@@ -2825,7 +2958,7 @@ class Frame(Widget):
 class LabelFrame(Widget):
     """
     Widget:
-    Simmilar the Frame widget.
+    Similar the Frame widget.
     The LabelFrame has an outline.
     A name can be set using the 'setText' methods.
     """
@@ -3527,8 +3660,12 @@ class TextEntry(LabelFrame):
         self._place(x, y, width, height, anchor)
         return self
     def placeRelative(self, fixX=None, fixY=None, fixWidth=None, fixHeight=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
-        raise NotImplemented("Text Entry: place relative is currently not implemented!")
-        #return self
+        assert fixWidth is not None and fixHeight is not None, "fixWidth and fixHeight must be defined!"
+        x = fixX if fixX is not None else 0
+        y = fixY if fixY is not None else 0
+        self.place(x, y, fixWidth, fixHeight)
+        super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
+
     def _get(self):
         return self["widget"]
 class TextDropdownMenu(Widget):
@@ -3903,7 +4040,6 @@ class Listbox(Widget):
         """
         _EventHandler._registerNewEvent(self, func, EventType.LISTBOX_SELECT, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
     def _decryptEvent(self, args):
-        print("test")
         try:
             w = args.widget
             if self["selectionMode"] == "single":
@@ -5229,6 +5365,7 @@ class DndCanvas(Canvas):
         canvas.dnd_accept = self._onDndWidget
         self._outlineID = None
         self["hide_widg_on_drag"] = False
+        self["drag_enabled"] = True
         # register "private" methods
         setattr(self, "dnd_accept", self._onDndWidget)
         setattr(self, "dnd_enter", self._onDndEnter)
@@ -5236,7 +5373,7 @@ class DndCanvas(Canvas):
         setattr(self, "dnd_leave", self._onDndLeave)
         setattr(self, "dnd_commit", self._onDndCommit)
     def _onDndWidget(self, dndHandl, event):
-        return self
+        return self if self["drag_enabled"] else None
     def _onDndEnter(self, dndHandl, event):
         self.setFocus()
         rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
@@ -5259,15 +5396,35 @@ class DndCanvas(Canvas):
         self["widget"]["dnd_canvas"] = None
         self._outlineID = None
     def _onDndCommit(self, dndHandl, event):
-        
         self._onDndLeave(dndHandl, event)
         rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
         self.attachWidgetCreator(dndHandl.widget, rsx, rsy)
 
-
+    def disableDrag(self):
+        self["drag_enabled"] = False
+    def enableDrag(self):
+        self["drag_enabled"] = True
     def setWidgetHiddenWhileDrag(self, b:bool=True):
         self["hide_widg_on_drag"] = bool(b)
         return self
+
+    def attachWidget(self, widget:Widget, x=0, y=0, width=None, height=None):
+        """
+        Attaches a widget to be dragged on this canvas.
+        Only on this canvas. If multi-canvas dragging is needed use 'DndCanvas.attachWidgetCreator' method.
+        """
+        if "dnd_canvas" not in widget._data.keys():
+            widget["dnd_canvas"] = None
+        if widget["dnd_canvas"] is None: # register
+            _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
+            widget["dnd_canvas"] = _DndHandler(self, _id, widget, None)
+            widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
+        else:
+            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
+            _id = self._get().create_window(x, y, width=width, height=height, window=widget._get(), anchor="nw")
+            widget["dnd_canvas"].id = _id
+
+
     def attachWidgetCreator(self, widgetCreator:Callable, x=0, y=0):
         """
         Attaches a function which creates a widget.
@@ -5298,7 +5455,6 @@ class DndCanvas(Canvas):
         if widget["dnd_canvas"] is not None:
             if widget["dnd_canvas"].widget.getID() == self.getID():
                 return
-            print("Detatching Widget")
             self.detachWidget(widget)
         _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
         widget["dnd_canvas"] = _DndHandler(self, _id, widget, widgetCreator)
