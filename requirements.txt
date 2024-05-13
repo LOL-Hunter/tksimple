@@ -1,0 +1,6 @@
+Pillow~=8.4.0
+pyfiglet~=0.8.post1
+termcolor~=1.1.0
+colorama~=0.4.4
+tkcalendar
+tkPDFViewer
