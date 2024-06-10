@@ -1,4 +1,4 @@
-﻿import tkinter.simpledialog as simd
+import tkinter.simpledialog as simd
 import tkinter.colorchooser as colorChooser
 import tkinter.messagebox as msg
 import tkinter.filedialog as fd
@@ -1145,27 +1145,22 @@ class Tk:
     def __del__(self):
         pass
         #print("__DELETE__", type(self))
-    def runTask(self, func):
+    def runTask(self, func)->_TaskScheduler:
         task = _TaskScheduler(self, 0, func)
-        task._id = self["master"].after(0, task)
         return task
-    def runTaskAfter(self, func, time):
+    def runTaskAfter(self, func, time)->_TaskScheduler:
         task = _TaskScheduler(self, time, func)
-        task._id = self["master"].after(int(time * 1000), task)
         return task
-    def runIdleLoop(self, func):
+    def runIdleLoop(self, func)->_TaskScheduler:
         task = _TaskScheduler(self, 0, func, repete=True)
-        task._id = self["master"].after(0, task)
         return task
-    def runDelayLoop(self, func, delay):
+    def runDelayLoop(self, func, delay)->_TaskScheduler:
         task = _TaskScheduler(self, delay, func, repete=True)
-        task._id = self["master"].after(0, task)
         return task
-    def runDynamicDelayLoop(self, delay, func):
+    def runDynamicDelayLoop(self, delay, func)->_TaskScheduler:
         task = _TaskScheduler(self, delay, func, repete=True, dynamic=True)
-        task._id = self["master"].after(0, task)
         return task
-    def getWindowActive(self):
+    def getWindowActive(self)->bool:
         return self["isRunning"]
     def throwErrorSound(self):
         self["master"].bell()
@@ -2572,6 +2567,15 @@ class WidgetGroup:
         for group in WidgetGroup._GROUPS:
             group.remove(widg)
 
+class Placer:
+    def __init__(self, ySpace, yStart=0):
+        self._ySpace = ySpace
+        self._yStart = yStart
+    def get(self):
+        x = self._yStart
+        self._yStart += self._ySpace
+        return x
+
 class _ToolTip(Widget):
     """
     Create a tooltip for a given widget.
@@ -3547,9 +3551,9 @@ class TextEntry(LabelFrame):
     """
     Widget:
     This is a Custom Widget.
-    A Entry and a Label is combined together.
-    Used to give the user an hint, what to write in the Entry.
-    Importaint: First set the Text and THEN place the widget.
+    An Entry and a Label are combined.
+    Used to give the user a hint, what to write in the Entry.
+    Important: First set the Text and THEN place the widget.
     """
     def __init__(self, _master, group=None, text=""):
         super().__init__(_master, group)
@@ -3665,7 +3669,15 @@ class TextEntry(LabelFrame):
         y = fixY if fixY is not None else 0
         self.place(x, y, fixWidth, fixHeight)
         super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
-
+        return self
+    def setFg(self, col:Union[Color, str]):
+        self.getEntry().setFg(col)
+        self.getLabel().setFg(col)
+        return self
+    def setBg(self, col:Union[Color, str]):
+        self.getEntry().setBg(col)
+        self.getLabel().setBg(col)
+        return self
     def _get(self):
         return self["widget"]
 class TextDropdownMenu(Widget):
