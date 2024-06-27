@@ -8,7 +8,7 @@ These libraries are not necessarily required to use other features.
 
 ### Why would I use this Library instead of tkinter?
 * All properties of widgets can be set/changed by using tab completable methods.
-* 
+
 
 ### Installation
 Note: This library is still WIP and not registered in pip yet.
