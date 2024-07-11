@@ -6,14 +6,14 @@ import tkinter.font as _font
 import tkinter.ttk as ttk
 import tkinter.dnd as _dnd
 import tkinter as _tk_
-import threading as th
+from threading import Thread
 from typing import Union, Callable, Iterable, List
 from datetime import date
 from enum import Enum
 from traceback import format_exc
-import random as r
-import time as t
-import string
+from random import randint, choice
+from time import strftime, time, sleep
+from string import ascii_lowercase
 import os
 
 
@@ -1062,10 +1062,10 @@ class _TaskScheduler:
         else:
             raise TKExceptions.InvalidWidgetTypeException("WidgetType must be any 'tkWidget' or 'Tk' not:"+str(type(_master)))
     def __call__(self):
-        f = t.time()
+        f = time()
         self._func()
         if self._repete:
-            self._id = self._master._get().after(self._delay*1000 if not self._dynamic else self._delay-(t.time()-f) if self._delay-(t.time()-f) > 0 else 0, self)
+            self._id = self._master._get().after(self._delay*1000 if not self._dynamic else self._delay-(time()-f) if self._delay-(time()-f) > 0 else 0, self)
     def start(self):
         self._id = self._master._get().after(int(self._delay*1000), self)
         return self
@@ -1095,7 +1095,7 @@ class Window:
         self.loopInterval = sec
     def mainloop(self):
         if hasattr(self.ins, "loop"): self.ins.onEnable()
-        th.Thread(target=self._loop).start()
+        Thread(target=self._loop).start()
         self.master.mainloop()
     def onEnable(self):
         pass
@@ -1104,7 +1104,7 @@ class Window:
     def _loop(self):
         while True:
             if hasattr(self.ins, "loop"):
-                t.sleep(self.loopInterval)
+                sleep(self.loopInterval)
                 self.ins.loop()
 
 class Tk:
@@ -1119,7 +1119,7 @@ class Tk:
         self.withdraw = self.hide
         self.setBackgroundColor = self.setBg
         if _master is None:
-            self._data = {"master": _tk_.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "setSize":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(r.randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":""}
+            self._data = {"master": _tk_.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "setSize":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":""}
 
             #configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
@@ -1212,10 +1212,10 @@ class Tk:
         @param s:
         @return:
         """
-        temp = t.time()
+        temp = time()
         while True:
             if not self["destroyed"]: self.update()
-            if t.time()-temp >= s:
+            if time()-temp >= s:
                 break
         return self
     def lift(self):
@@ -1762,12 +1762,12 @@ class Toplevel(Tk):
     """
     def __init__(self, _master, group=None, topMost=True):
         if isinstance(_master, Tk):
-            self._data = {"master": _tk_.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "setSize":(), "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(r.randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
+            self._data = {"master": _tk_.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "setSize":(), "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
             _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, str) and _master == "Tk":
-            self._data = {"master":_tk_.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "setSize":(),"isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(r.randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
+            self._data = {"master":_tk_.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "setSize":(),"isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
             _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
@@ -1826,7 +1826,7 @@ class Widget:
         if list(_data.keys()).__contains__("id"): self._data = _data
         else:
             _data["tkMaster"] = _data["master"] if isinstance(_data["master"], Tk) else _data["master"]["tkMaster"]
-            id = "".join([str(r.randint(0,9)) for _ in range(15)])
+            id = "".join([str(randint(0,9)) for _ in range(15)])
             self._data = {**_data, **{"widgetProperties":{},"childWidgets":{}, "id":id, "placed":True, "destroyed":False, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "group":group}}
             self._data["master"]["childWidgets"][self["id"]] = self._ins
             if list(_data.keys()).__contains__("init"):
@@ -4359,7 +4359,7 @@ class Text(Widget):
         @return:
         """
         if not text.endswith("\n"): text = text+"\n"
-        self.addText(t.strftime("[%H:%M:%S]: ")+text, color)
+        self.addText(strftime("[%H:%M:%S]: ")+text, color)
         return self
     def setStrf(self, text:str):
         """
@@ -4424,7 +4424,7 @@ class Text(Widget):
                 _textSectionLastLength = len(textSection.split("\n")[-1]) - 1  # section nur 1 zeile (dann farbe entfernen)
             secondMarker = str(line) + "." + str(firstMarkerChar + _textSectionLastLength)
             if textSection[0] in colors.keys():  # check if tag is a valid color
-                _id = "".join([r.choice(string.ascii_lowercase) for _ in range(30)])
+                _id = "".join([choice(ascii_lowercase) for _ in range(30)])
                 self["widget"].tag_add(_id, firstMarker, secondMarker)
                 self["widget"].tag_config(_id, foreground=colors[textSection[0]].value)
             else:
@@ -5025,7 +5025,7 @@ class TaskBar(Widget):
 class _SubMenu:
     _SUB_MENUS = []
     def __init__(self, master, menu, _data, name, group):
-        self._id = "".join([str(r.randint(0,9)) for _ in range(15)])
+        self._id = "".join([str(randint(0,9)) for _ in range(15)])
         self._widgets = [] #[["command", <type: Button>], ["cascade", <type: Button>, <type: SubMenu>]]
         self._data = _data
         self._name = name
@@ -5490,7 +5490,7 @@ class CanvasObject:
             self._data["loc2"] = None
             self._data["width"] = None
             self._data["height"] = None
-            self._data["id"] = "".join([str(r.randint(0,9)) for _ in range(15)])
+            self._data["id"] = "".join([str(randint(0,9)) for _ in range(15)])
             self._data["master"]["canObjs"][self._ins["id"]] = self._ins
             self._data["registry"] = _EventRegistry(self)
     def __getitem__(self, item):
@@ -5793,7 +5793,7 @@ class SimpleDialog:
         dialog.show()
         while True:
             master.update()
-            t.sleep(.1)
+            sleep(.1)
             if _return == "None":
                 if _masterNone: master.destroy()
                 dialog.destroy()
@@ -5852,7 +5852,7 @@ class SimpleDialog:
         dialog.show()
         while True:
             master.update()
-            t.sleep(.1)
+            sleep(.1)
             if _return == "None":
                 dialog.destroy()
                 if _masterNone: master.destroy()
