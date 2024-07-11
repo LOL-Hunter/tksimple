@@ -36,7 +36,6 @@ Widgets:
 
 """
 
-
 class Location2D:
     def __init__(self, *args, **kwargs):
         self.copy = self.clone
@@ -144,7 +143,7 @@ class Rect:
     def fromLocLoc(loc1:Location2D, loc2:Location2D):
         return Rect(loc1, loc2)
     @staticmethod
-    def fromLocWidthHeight(loc:Location2D, width:int|float=0, height:int|float=0):
+    def fromLocWidthHeight(loc:Location2D, width:int | float=0, height:int | float=0):
         return Rect(loc, loc.clone().change(x=width, y=height))
     """@staticmethod
     def fromTkWidget(w):
@@ -270,8 +269,8 @@ class Color(Enum):
     def rgb(r:int, g:int, b:int):
         return '#%02x%02x%02x' % (r, g, b)
     @staticmethod
-    def hex(hex:str):
-        return hex
+    def hex(hex_:str):
+        return hex_
 class Wrap(Enum):
     NONE = "none"
     WORD = "word"
@@ -508,8 +507,8 @@ class PILImage:
         return PILImage(image)
     def clone(self, useOriginal=False):
         """
-        Copys the image and returns a new image instance.
-        @param orginal: if the original image should be taken.
+        Copies the image and returns a new image instance.
+        @param useOriginal: if the original image should be taken.
         @return:
         """
         return PILImage(self._image.copy() if not useOriginal else self._original.copy())
@@ -640,7 +639,7 @@ class TkImage:
         @return:
         """
         return int(self.image["height"])
-    def _get(self, o=None):
+    def _get(self):
         return self.image
 
 class Event:
@@ -820,8 +819,6 @@ class _EventRegistry:
             return self["event"][type_][0]
         return None
     def unregisterType(self, type_):
-        if hasattr(type_, "value"):
-            eventType = type_.value
         if type_ in self["event"].keys():
             _event = self["event"][type_][0].event
             _event.getWidget()._get().unbind(_event.getEventType())
@@ -852,7 +849,6 @@ class _EventHandler:
         #print("Args:", type(args[0]))
         if self.event is None: return
         def raiseError():
-            exc = format_exc()
             info = f"""
 # Could not call bound function!
 # BindTo:    '{"" if not hasattr(event["func"], "__self__") else event["func"].__self__.__class__.__name__ + "."}{event["func"] if not hasattr(event["func"], "__name__") else event["func"].__name__}'
@@ -1254,7 +1250,7 @@ class Tk:
         @param func: function get called on trigger
         @param event: Event type: EventType enum or default tkinter event as string.
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -1390,7 +1386,7 @@ class Tk:
     def setCloseable(self, b:bool):
         """
         If b is True -> Window cannot be closed
-        If b is False -> Window can normally closed
+        If b is False -> Window can normally close
 
         @param b:
         @return:
@@ -1868,9 +1864,7 @@ class Widget:
     def setTextOrientation(self, ori:Anchor=Anchor.LEFT):
         """
         Set the Text align.
-        Default is Anchor.CENTER
-
-
+        Default is 'Anchor.CENTER'
 
         @param ori:
         @return:
@@ -1884,7 +1878,7 @@ class Widget:
 
         @param text: Text that will be shown in ToolTip
         @param atext: AdditionalText will be shown when shift key is pressed.
-        @param group: Optional WidgetGroup instance for preset font, color etc
+        @param group: Optional WidgetGroup instance for preset font, color etc.
         @param waitBeforeShow: Time the user have to hover over this widget to show the TooTip
         @return: ToolTip instance for further configuration
         """
@@ -1892,10 +1886,10 @@ class Widget:
     def setOrientation(self, ori:Orient):
         """
         Set the Orientation via Orient enum.
-        Used for Processbars, Scales etc.
-        Posible orientations:
-            Orient.HORIZONTAL
-            Orient.VERTICAL
+        Used for process bars, Scales etc.
+        Possible orientations:
+            'Orient.HORIZONTAL'
+            'Orient.VERTICAL'
 
         @param ori:
         @return:
@@ -1970,7 +1964,7 @@ class Widget:
         Select the Compound of an image behind a text.
 
         example:
-            Center -> centers a image behind an text.
+            'Direction.Center' -> centers an image behind a text.
 
         @param dir_:
         @return:
@@ -1996,7 +1990,7 @@ class Widget:
         @param func: function get called on trigger
         @param event: Event type: EventType enum or default tkinter event as string.
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -2163,7 +2157,7 @@ class Widget:
         return self
     def placeForget(self):
         """
-        Removes the this widget from its master.
+        Removes this widget from its master.
         Can be placed again after.
 
         @return:
@@ -2245,12 +2239,12 @@ class Widget:
 
         Offset:
             Offset means to configure the size of the widget percentage to the master size.
-            xOffsetLeft=50 means that the widget has 50% of the witdh of the master and is right oriented.
+            xOffsetLeft=50 means that the widget has 50% of the master-width and is right oriented.
 
-        @param fixX: Defines x coordinate as fixed. This is no longer auto-configured.
-        @param fixY: Defines y coordinate as fixed. This is no longer auto-configured.
-        @param fixWidth: Defines width coordinate as fixed. This is no longer auto-configured.
-        @param fixHeight: Defines height coordinate as fixed. This is no longer auto-configured.
+        @param fixX: Defines x coordinate as fixed. This is no longer autoconfigured.
+        @param fixY: Defines y coordinate as fixed. This is no longer autoconfigured.
+        @param fixWidth: Defines width coordinate as fixed. This is no longer autoconfigured.
+        @param fixHeight: Defines height coordinate as fixed. This is no longer autoconfigured.
         @param xOffset: offset x both sides
         @param yOffset: offset y both sides
         @param xOffsetLeft: offset x left
@@ -2261,7 +2255,7 @@ class Widget:
         @param stickDown: Sets the bottom to the right side.
         @param centerY: Centers the widget on Y-Axis.
         @param centerX: Centers the widget on X-Axis.
-        @param changeX: Changes x coodinate after all calculations are done.
+        @param changeX: Changes x coordinate after all calculations are done.
         @param changeY: Changes y coodinate after all calculations are done.
         @param changeWidth: Changes width coodinate after all calculations are done.
         @param changeHeight: Changes height coodinate after all calculations are done.
@@ -2448,7 +2442,6 @@ class WidgetGroup:
     _GROUPS = []
     def __init__(self, instantiate=None):
         """
-        @param type_: If
         @param instantiate: creates a copy of given group.
         """
         self._widgets = []
@@ -2493,7 +2486,7 @@ class WidgetGroup:
         set Function_name '@custom' for Custom change.
         Pass function with one Argument (for widget) to args!
 
-        @param function_name: name of the function to call on intantiate.
+        @param function_name: name of the function to call on instantiate.
         @param args: arguments for this function
         @param ignoreErrors: if the errors should be ignored
         @param onlyFor: the function is only executed for widget type
@@ -2543,11 +2536,13 @@ class WidgetGroup:
         return self
     def runWithSettings(self, ignoreErrors=False, changeOnlyForType=None):
         """
-        Run only the following Command with this settings.
+        Run only the following Command with these settings.
 
+        Example:
+            group.runWithSettings(changeOnlyForType=tk.Button).
 
         @param ignoreErrors: is error ignored.
-        @param changeOnlyForType: command is only executed on that widget.
+        @param changeOnlyForType: command is only executed on that widget. Type: Widget.
         @return:
         """
         self._priorityData = {
@@ -2622,7 +2617,7 @@ class _ToolTip(Widget):
         if self["tip"]:
             text = self["text"] if mode == "release" else self["atext"]
             self["tipLabel"].destroy()
-            self["tipLabel"] = Label(self["tip"]).applyTkOption(text=text, justify='left', background="#ffffff", relief='solid', borderwidth=1, wraplength = self["wrapLength"])
+            self["tipLabel"] = Label(self["tip"]).applyTkOption(text=text, justify='left', background="#ffffff", relief='solid', borderwidth=1, wraplength=self["wrapLength"])
             self["tipLabel"]._get().pack(ipadx=1)
     def _enter(self, e):
         self._schedule()
@@ -2639,14 +2634,18 @@ class _ToolTip(Widget):
     def _show(self):
         if self["disableTip"]:
             return
-        x, y, cx, cy = self["master"]._get().bbox("insert")
-        x += self["master"]._get().winfo_rootx() + 25
-        y += self["master"]._get().winfo_rooty() + 20
+        mx, my = (self["master"].getTkMaster()._get().winfo_pointerx(), self["master"].getTkMaster()._get().winfo_pointery())
         self._hidetip()
         self["tip"] = Toplevel(self["master"]["tkMaster"], group=self["group"])
         self["tip"].overrideredirect()
-        self["tip"].setPositionOnScreen(x, y)
-        self["tipLabel"] = Label(self["tip"], group=self["group"]).applyTkOption(text=self["text"], justify='left', relief='solid', borderwidth=1, wraplength = self["wrapLength"])
+        self["tip"].setPositionOnScreen(mx, my+15)
+        self["tipLabel"] = Label(self["tip"], group=self["group"]).applyTkOption(
+            text=self["text"],
+            justify='left',
+            relief='solid',
+            borderwidth=1,
+            wraplength=self["wrapLength"]
+        )
         self["tipLabel"]._get().pack(ipadx=1)
     def _hidetip(self):
         pin = self["tip"]
@@ -2676,8 +2675,6 @@ class MatPlotLibFigure(Widget):
     """
     def __init__(self, _master, fig, group=None, toolBar=False):
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-        from matplotlib.backend_bases import key_press_handler
-        from matplotlib.figure import Figure
         if isinstance(_master, dict):
             self._data = _master
         elif isinstance(_master, self.__class__):
@@ -2797,7 +2794,7 @@ class Calendar(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -2806,7 +2803,7 @@ class Calendar(Widget):
 class DropdownCalendar(Widget):
     """
     Widget:
-    This widget displays a Entry like folds out calendar to select day and year.
+    This widget displays an Entry like folds out calendar to select day and year.
 
     To use this widget the 'tkcalencar' library have to be installed.
     """
@@ -2876,7 +2873,7 @@ class DropdownCalendar(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -2917,7 +2914,7 @@ class ScrollBar(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3061,7 +3058,7 @@ class Checkbutton(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3136,7 +3133,7 @@ class Radiobutton:
         return self._data["intVar"].get()
     def setState(self, i:int):
         """
-        Set radiobutton on index i selected.
+        Set radiobutton on index 'i' selected.
         @param i:
         @return:
         """
@@ -3162,7 +3159,7 @@ class Radiobutton:
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3291,7 +3288,7 @@ class Button(Widget):
 
         @param cmd: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3390,7 +3387,7 @@ class OnOffButton(Widget):
         EventValue: None
         @param cmd: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3436,7 +3433,7 @@ class Entry(Widget):
     def attachHorizontalScrollBar(self, sc:ScrollBar):
         """
         Used to attach a horizontal scrollbar to the Entry.
-        Pass an Scrollbar instance to this method.
+        Pass a Scrollbar instance to this method.
         @param sc:
         @return:
         """
@@ -3446,7 +3443,7 @@ class Entry(Widget):
         self["widget"]["xscrollcommand"] = sc["widget"].set
     def setCursorBlinkDelay(self, d:float):
         """
-        Set the cursor blinkdelay in seconds.
+        Set the cursor blink-delay in seconds.
         @param d:
         @return:
         """
@@ -3490,7 +3487,7 @@ class Entry(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3568,9 +3565,10 @@ class TextEntry(LabelFrame):
         """
         Binds a specific event to the Widget. Runs given function on trigger.
 
-        @param cmd: function get called on trigger
+        @param func: function get called on trigger
+        @param event: Event type: EventType enum or default tkinter event as string.
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3684,9 +3682,9 @@ class TextDropdownMenu(Widget):
     """
     Widget:
     This is a Custom Widget.
-    A DropdownMenu and a Label is combined together.
-    Used to give the user an hint, what to write in the DropdownMenu.
-    Importaint: First set the Text and THEN place the widget.
+    DropdownMenu and Label combination.
+    Used to give the user a hint, what to write/select in the DropdownMenu.
+    Important: First set the Text and THEN place the widget.
     """
     def __init__(self, _master, group=None, text=""):
         if isinstance(_master, dict):
@@ -3707,9 +3705,10 @@ class TextDropdownMenu(Widget):
         """
         Binds a specific event to the Widget. Runs given function on trigger.
 
-        @param cmd: function get called on trigger
+        @param func: function get called on trigger
+        @param event:  Event type: EventType enum or default tkinter event as string.
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -3843,7 +3842,7 @@ class Listbox(Widget):
     def attachVerticalScrollBar(self, sc:ScrollBar):
         """
         Used to attach a vertical scrollbar to the Entry.
-        Pass an Scrollbar instance to this method.
+        Pass a Scrollbar instance to this method.
         @param sc:
         @return:
         """
@@ -3944,7 +3943,7 @@ class Listbox(Widget):
         return self
     def setSlotBg(self, index:int, col: Color = Color.WHITE):
         """
-        Set backgroundcolor of item an given index.
+        Set backgroundcolor of item a given index.
         @param index:
         @param col:
         @return:
@@ -4161,7 +4160,7 @@ class Scale(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possible to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @return:
         """
         _EventHandler._registerNewCommand(self, func, args, priority, decryptValueFunc=self._decryptValue)
@@ -4516,7 +4515,7 @@ class Text(Widget):
 
         @param func: function get called on trigger
         @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, its possibe to set priorities.
+        @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
         @param disableArgs: if True no args gets passed.
         @return:
@@ -5330,7 +5329,6 @@ class Notebook(Widget):
         for tab in self["tabIndexList"]:  # destroy all tabs
             tab.destroy()
 
-
 class Canvas(Widget):
     def __init__(self, _master, group=None):
         if isinstance(_master, dict):
@@ -5572,10 +5570,19 @@ class CanvasImage(CanvasObject):
     def setImage(self, i:Union[TkImage, PILImage]):
         self["_data"]["image"] = i._get()
         return self
-    def render(self):
-        self.destroy()
-        self["objID"] = self["master"]._get()._create(self["type"], (self["loc1"].getX(), self["loc1"].getY()), self["_data"])
-        self._data["master"]["canObjs"][self["id"]] = self
+    def render(self, updatePos=False):
+        if updatePos and self["objID"] is not None:
+            self["master"]._get().coords(
+                self["objID"],
+                ((self["loc1"].getX(), self["loc1"].getY(), self["loc1"].getX() + self["width"],
+                  self["loc1"].getY() + self["height"])
+                 if self["loc2"] is None else
+                 (self["loc1"].getX(), self["loc1"].getY(), self["loc2"].getX(), self["loc2"].getY()))
+            )
+        else:
+            self.destroy()
+            self["objID"] = self["master"]._get()._create(self["type"], (self["loc1"].getX(), self["loc1"].getY()), self["_data"])
+            self._data["master"]["canObjs"][self["id"]] = self
         return self
 class CanvasRect(CanvasObject):
     def __init__(self, _master=None, group=None):
@@ -5630,24 +5637,24 @@ class CanvasText(CanvasObject):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Canvas):
-            self._data = {"master": _master, "objID":None, "widget":None, "type":"text", "_data":{}}
+            self._data = {"master": _master, "objID":None, "widget":None, "type":"text", "data":{}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + " instance or Canvas not: " + str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
     def setText(self, text):
-        self["_data"]["text"] = str(text)
+        self["data"]["text"] = str(text)
         return self
     def setFont(self, size, art=FontType.ARIAL):
-        self["_data"]["font"] = (art.value if hasattr(art, "value") else art, size)
+        self["data"]["font"] = (art.value if hasattr(art, "value") else art, size)
         return self
-    def render(self):
+    def render(self, updatePos=False):
         if "loc2" not in list(self._data.keys()):
-            self["objID"] = self["master"]._get()._create(self["type"], args=(self["loc1"].getX(), self["loc1"].getY()), kw=self["_data"])
+            self["objID"] = self["master"]._get()._create(self["type"], args=(self["loc1"].getX(), self["loc1"].getY()), kw=self["data"])
         else:
-            self["objID"] = self["master"]._get()._create(self["type"], args=(self["loc1"].getX(), self["loc1"].getY()), kw=self["_data"])
+            self["objID"] = self["master"]._get()._create(self["type"], args=(self["loc1"].getX(), self["loc1"].getY()), kw=self["data"])
         return self
     def setTextAngle(self, a):
-        self["_data"]["angle"] = int(a)
+        self["data"]["angle"] = int(a)
         return self
 
 class FileDialog:
@@ -5796,7 +5803,7 @@ class SimpleDialog:
                 dialog.destroy()
                 return _return
     @staticmethod
-    def chooseFromList(master, title="", values=None, chooseOnlyOne=True, topMost=True, forceToChoose=True)->str|list:
+    def chooseFromList(master, title="", values=None, chooseOnlyOne=True, forceToChoose=True)->str | list | None:
         _return = None
         _masterNone = False
 
@@ -5830,7 +5837,11 @@ class SimpleDialog:
         dialog.setWindowSize(200, 200)
         dialog.setResizeable(False)
         dialog.setTitle(title)
-        list_ = Listbox(dialog, mode="single" if chooseOnlyOne else "multiple")
+        list_ = Listbox(dialog)
+        if chooseOnlyOne:
+            list_.setSingleSelect()
+        else:
+            list_.setMultipleSelect()
         list_.addAll(values)
         list_.placeRelative(changeHeight=-30)
         list_.bind(select, EventType.DOUBBLE_LEFT)
@@ -5843,12 +5854,12 @@ class SimpleDialog:
             master.update()
             t.sleep(.1)
             if _return == "None":
-                if _masterNone: master.destroy()
                 dialog.destroy()
+                if _masterNone: master.destroy()
                 return None
             elif isinstance(_return, list):
-                if _masterNone: master.destroy()
                 dialog.destroy()
+                if _masterNone: master.destroy()
                 return _return
     @staticmethod
     def _dialog(d, master, **kwargs):
