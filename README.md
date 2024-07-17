@@ -1,5 +1,4 @@
 # Simple Tkinter Library 
-This is the standalone version of the pysettings.tk package! \
 The library is usable but still WIP and currently not running plain tkinter code.
 
 It provides several features to create GUI's much simpler and faster. \
