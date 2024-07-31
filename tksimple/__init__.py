@@ -16,7 +16,6 @@ from time import strftime, time, sleep
 from string import ascii_lowercase
 import os
 
-
 #TODO parameter description in __init__
 #TODO parameter type in __init__
 #TODO event value in bind
@@ -1086,27 +1085,6 @@ class _IntVar:
     def set(self, v:int):
         self._intvar.set(v)
 
-class Window:
-    def __init__(self, ins):
-        self.loopInterval = 0
-        self.ins = ins
-        self.master = Tk()
-    def setLoopInterval(self, sec):
-        self.loopInterval = sec
-    def mainloop(self):
-        if hasattr(self.ins, "loop"): self.ins.onEnable()
-        Thread(target=self._loop).start()
-        self.master.mainloop()
-    def onEnable(self):
-        pass
-    def loop(self):
-        pass
-    def _loop(self):
-        while True:
-            if hasattr(self.ins, "loop"):
-                sleep(self.loopInterval)
-                self.ins.loop()
-
 class Tk:
     """
     The toplevel window class
@@ -1120,10 +1098,8 @@ class Tk:
         self.setBackgroundColor = self.setBg
         if _master is None:
             self._data = {"master": _tk_.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "setSize":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":""}
-
             #configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
-
         elif isinstance(_master, dict):
             self._data = _master
         elif isinstance(_master, Tk):
@@ -1646,7 +1622,7 @@ class Tk:
 
         relevantIDs = list(self["dynamicWidgets"].keys())
         for widget in self._getAllChildWidgets(self):
-            if widget.getID() in relevantIDs:
+            if widget._getID() in relevantIDs:
                 if isinstance(widget, _ToolTip): continue
                 if not widget["destroyed"]: self._updateDynamicSize(widget)
         return self
@@ -1788,7 +1764,7 @@ class Toplevel(Tk):
 class Dialog(Toplevel):
     """
     Similar to Toplevel.
-    Master of this dialog is complete disabled until dialog is closed.
+    Master of this dialog is disabled until dialog is closed.
     Dialog is topmost on default.
     """
     def __init__(self, _master, group=None, topMost=True):
@@ -1853,14 +1829,55 @@ class Widget:
         if self["group"] is not None:
             self["group"].remove(self._ins)
         self._data.clear()
-    def getRelScreenPos(self)->Location2D:
+    # Attribute Setter Methods
+    def setBg(self, col:Union[Color, str]):
         """
-        Returns the location of this widget relative to the screen.
+        Set the background color of this widget.
+
+        @param col: Use Color enum, tkinter string or hex-code.
+        @return:
         """
-        return Location2D(
-            self["widget"].winfo_rootx(),
-            self["widget"].winfo_rooty()
-        )
+        self._setAttribute("bg", col.value if hasattr(col, "value") else col)
+        return self
+    def setFg(self, col:Union[Color, str]):
+        """
+        Set the text color of this widget.
+
+        @param col: Use Color enum, tkinter string or hex-code.
+        @return:
+        """
+        self._setAttribute("fg", col.value if hasattr(col, "value") else col)
+        return self
+    def setText(self, text):
+        """
+        Set the text of this widget.
+
+        @param text:
+        @return:
+        """
+        self._setAttribute("text", str(text))
+        return self
+    def setFont(self, size:int=10, art=FontType.ARIAL, underline=False, bold=False, slant=False, overstrike=False):
+        """
+        Use this method to configure the Font.
+
+        @param size: text size
+        @param art: font type
+        @param underline: text is underlined
+        @param bold: text is bold
+        @param slant: text is slant
+        @param overstrike: text is overstrike
+        @return:
+        """
+        _data = {'family': art.value if hasattr(art, "value") else art,
+                'size': size,                            # size
+                'weight': 'bold' if slant else 'normal', # fett
+                'slant': 'italic' if bold else'roman',   # kusiv
+                'underline': bool(underline),            # unterstrichen
+                'overstrike': bool(overstrike)}          # durchgestrichen
+
+        self._setAttribute("font", _font.Font(**_data))
+        return self
     def setTextOrientation(self, ori:Anchor=Anchor.LEFT):
         """
         Set the Text align.
@@ -1871,18 +1888,6 @@ class Widget:
         """
         self._setAttribute("anchor", ori.value if hasattr(ori, "value") else ori)
         return self
-    def attachToolTip(self, text:str, atext:str="", group=None, waitBeforeShow=.5):
-        """
-        Attaches a tooltip that opens on hover over this Widget longer than 'waitBeforeShow' seconds.
-
-
-        @param text: Text that will be shown in ToolTip
-        @param atext: AdditionalText will be shown when shift key is pressed.
-        @param group: Optional WidgetGroup instance for preset font, color etc.
-        @param waitBeforeShow: Time the user have to hover over this widget to show the TooTip
-        @return: ToolTip instance for further configuration
-        """
-        return _ToolTip(self, atext != "", waitBeforeShow=waitBeforeShow, group=group).setText(text).setAdditionalText(atext)
     def setOrientation(self, ori:Orient):
         """
         Set the Orientation via Orient enum.
@@ -1896,19 +1901,6 @@ class Widget:
         """
         self._setAttribute("orient", ori.value if hasattr(ori, "value") else ori)
         return self
-    def _setId(self, id_:str): #@TODO: why? maby error with event??
-        self["id"] = str(id_)
-    def _addData(self, _data:dict):
-        self._data = {**self._data, **_data}
-    def unbind(self, event:Union[EventType, Key, Mouse]):
-        """
-        Unbinds all Events from given EventType.
-
-        @param event:
-        @return:
-        """
-        #self["registry"].unregisterType(event)
-        raise NotImplemented()
     def setStyle(self, style:Style):
         """
         Set widget style.
@@ -1928,6 +1920,54 @@ class Widget:
         """
         self._setAttribute("bd", bd)
         return self
+    def setCompound(self, dir_:Direction):
+        """
+        Select the Compound of an image behind a text.
+
+        example:
+            'Direction.Center' -> centers an image behind a text.
+
+        @param dir_:
+        @return:
+        """
+        dir_ = dir_.value if hasattr(dir_, "value") else dir_
+        self._setAttribute("compound", dir_)
+        return self
+    def setCursor(self, c:Cursor):
+        """
+        Set cursor image from Cursor enum or default tkinter string.
+        This only applies while hovering over this widget.
+
+        @note only predefined cursors are implemented yet
+        @param c:
+        @return:
+        """
+        self["widget"]["cursor"] = c.value if hasattr(c, "value") else c
+        return self
+    def setDisabled(self):
+        """
+        Disables this widget.
+
+        @return:
+        """
+        self._setAttribute("state", _tk_.DISABLED)
+        return self
+    def setEnabled(self):
+        """
+        Enables this widget.
+
+        @return:
+        """
+        self._setAttribute("state", _tk_.NORMAL)
+        return self
+    # Attribute Getter Methods
+    def getText(self):
+        """
+        Returns the set text.
+
+        @return:
+        """
+        return self["widget"]["text"]
     def getHeight(self):
         """
         Returns the Widget Height.
@@ -1946,91 +1986,14 @@ class Widget:
         """
         self.updateIdleTasks()
         return self["widget"].winfo_width()
-    def generateEvent(self, event:Union[EventType, Key, Mouse, str]):
+    def getRelScreenPos(self)->Location2D:
         """
-        Triggers given event on this widget.
-
-        @note Custom Events are not implemented yet!
-
-        @param event:
-        @return:
+        Returns the location of this widget relative to the screen.
         """
-        event = event.value if hasattr(event, "value") else event
-        if event.startswith("["):
-            raise NotImplemented("Trigger custom Events is not implemented yet!")
-        self["widget"].event_generate(event)
-    def setCompound(self, dir_:Direction):
-        """
-        Select the Compound of an image behind a text.
-
-        example:
-            'Direction.Center' -> centers an image behind a text.
-
-        @param dir_:
-        @return:
-        """
-        dir_ = dir_.value if hasattr(dir_, "value") else dir_
-        self._setAttribute("compound", dir_)
-        return self
-    def lift(self, widg=None):
-        """
-        Lifts this widget in front of all other or in front of given Widget.
-
-        @param widg:
-        @return:
-        """
-        if widg is not None:
-            self["widget"].lift(widg._get())
-        else:
-            self["widget"].lift()
-    def bind(self, func:Callable, event:Union[EventType, Key, Mouse, str], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
-        """
-        Binds a specific event to the Widget. Runs given function on trigger.
-
-        @param func: function get called on trigger
-        @param event: Event type: EventType enum or default tkinter event as string.
-        @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, it's possible to set priorities.
-        @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
-        @param disableArgs: if True no args gets passed.
-        @return:
-        """
-        if event == "CANCEL": return
-        if hasattr(event, "value"):
-            event = event.value
-        if event.startswith("["):
-            _EventHandler._registerNewCustomEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
-        else:
-            _EventHandler._registerNewEvent(self._ins, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
-        return self
-    def canTakeFocusByTab(self, b:bool=False):
-        """
-        Set if this widget can take focus by pressing tab.
-        Default: True
-
-        @param b:
-        @return:
-        """
-        self._setAttribute("takefocus", int(b))
-        return self
-    def setCursor(self, c:Cursor):
-        """
-        Set cursor image from Cursor enum or default tkinter string.
-        This only applies while hovering over this widget.
-
-        @note only predefined cursors are implented yet
-        @param c:
-        @return:
-        """
-        self["widget"]["cursor"] = c.value if hasattr(c, "value") else c
-        return self
-    def isFocus(self):
-        """
-        Returns a boolean if this widget is currently no focus.
-
-        @return:
-        """
-        return self["widget"].focus_get() == self._get()
+        return Location2D(
+            self["widget"].winfo_rootx(),
+            self["widget"].winfo_rooty()
+        )
     def setFocus(self):
         """
         Sets the focus to this Window.
@@ -2055,22 +2018,37 @@ class Widget:
         @return:
         """
         return Location2D(self["widget"].winfo_vrootx(), self["widget"].winfo_vrooty())
-    def setDisabled(self):
+    # Misc Methods
+    def isFocus(self):
         """
-        Disables this widget.
+        Returns a boolean if this widget is currently no focus.
 
         @return:
         """
-        self._setAttribute("state", _tk_.DISABLED)
-        return self
-    def setEnabled(self):
+        return self["widget"].focus_get() == self._get()
+    def attachToolTip(self, text:str, atext:str="", group=None, waitBeforeShow=.5):
         """
-        Enables this widget.
+        Attaches a tooltip that opens on hover over this Widget longer than 'waitBeforeShow' seconds.
 
+
+        @param text: Text that will be shown in ToolTip
+        @param atext: AdditionalText will be shown when shift key is pressed.
+        @param group: Optional WidgetGroup instance for preset font, color etc.
+        @param waitBeforeShow: Time the user have to hover over this widget to show the TooTip
+        @return: ToolTip instance for further configuration
+        """
+        return _ToolTip(self, atext != "", waitBeforeShow=waitBeforeShow, group=group).setText(text).setAdditionalText(atext)
+    def canTakeFocusByTab(self, b:bool=False):
+        """
+        Set if this widget can take focus by pressing tab.
+        Default: True
+
+        @param b:
         @return:
         """
-        self._setAttribute("state", _tk_.NORMAL)
+        self._setAttribute("takefocus", int(b))
         return self
+    # Update Methods
     def update(self):
         """
         Calls the tkinter update of this widget.
@@ -2100,73 +2078,50 @@ class Widget:
         """
         self["tkMaster"]._updateDynamicSize(self)
         return self
-    def setFont(self, size:int=10, art=FontType.ARIAL, underline=False, bold=False, slant=False, overstrike=False):
+    # Event Management Methods
+    def bind(self, func:Callable, event:Union[EventType, Key, Mouse, str], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
-        Use this method to configure the Font.
+        Binds a specific event to the Widget. Runs given function on trigger.
 
-        @param size: text size
-        @param art: font type
-        @param underline: text is underlined
-        @param bold: text is bold
-        @param slant: text is slant
-        @param overstrike: text is overstrike
+        @param func: function get called on trigger
+        @param event: Event type: EventType enum or default tkinter event as string.
+        @param args: Additional arguments as List.
+        @param priority: If several equal events are bound, it's possible to set priorities.
+        @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
+        @param disableArgs: if True no args gets passed.
         @return:
         """
-        _data = {'family': art.value if hasattr(art, "value") else art,
-                'size': size,                            # size
-                'weight': 'bold' if slant else 'normal', # fett
-                'slant': 'italic' if bold else'roman',   # kusiv
-                'underline': bool(underline),            # unterstrichen
-                'overstrike': bool(overstrike)}          # durchgestrichen
-
-        self._setAttribute("font", _font.Font(**_data))
+        if event == "CANCEL": return
+        if hasattr(event, "value"):
+            event = event.value
+        if event.startswith("["):
+            _EventHandler._registerNewCustomEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
+        else:
+            _EventHandler._registerNewEvent(self._ins, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
         return self
-    def setText(self, text):
+    def unbind(self, event:Union[EventType, Key, Mouse]):
         """
-        Set the text of this widget.
+        Unbinds all Events from given EventType.
 
-        @param text:
+        @param event:
         @return:
         """
-        self._setAttribute("text", str(text))
-        return self
-    def getText(self):
+        #self["registry"].unregisterType(event)
+        raise NotImplemented()
+    def generateEvent(self, event:Union[EventType, Key, Mouse, str]):
         """
-        Returns the set text.
+        Triggers given event on this widget.
 
+        @note Custom Events are not implemented yet!
+
+        @param event:
         @return:
         """
-        return self["widget"]["text"]
-    def setBg(self, col:Union[Color, str]):
-        """
-        Set the background color of this widget.
-
-        @param col: Use Color enum, tkinter string or hex-code.
-        @return:
-        """
-        self._setAttribute("bg", col.value if hasattr(col, "value") else col)
-        return self
-    def setFg(self, col:Union[Color, str]):
-        """
-         Set the text color of this widget.
-
-        @param col: Use Color enum, tkinter string or hex-code.
-        @return:
-        """
-        self._setAttribute("fg", col.value if hasattr(col, "value") else col)
-        return self
-    def placeForget(self):
-        """
-        Removes this widget from its master.
-        Can be placed again after.
-
-        @return:
-        """
-        try:
-            self["widget"].place_forget()
-            self["placed"] = False
-        except: pass
-        self["tkMaster"]._unregisterOnResize(self)
+        event = event.value if hasattr(event, "value") else event
+        if event.startswith("["):
+            raise NotImplemented("Trigger custom Events is not implemented yet!")
+        self["widget"].event_generate(event)
+    # Place Manager Methods
     def grid(self, row=0, column=0):
         """
         Default tkinter grid-manager.
@@ -2177,58 +2132,6 @@ class Widget:
         """
         assert not self["destroyed"], "The widget has been destroyed and can no longer be placed."
         self["widget"].grid(row=row, column=column)
-        return self
-    def _placeRelative(self, fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize):
-        """
-        Private implementation of relative place.
-
-        @param fixX:
-        @param fixY:
-        @param fixWidth:
-        @param fixHeight:
-        @param xOffset:
-        @param yOffset:
-        @param xOffsetLeft:
-        @param xOffsetRight:
-        @param yOffsetUp:
-        @param yOffsetDown:
-        @param stickRight:
-        @param stickDown:
-        @param centerY:
-        @param centerX:
-        @param changeX:
-        @param changeY:
-        @param changeWidth:
-        @param changeHeight:
-        @param nextTo:
-        @param updateOnResize:
-        @return:
-        """
-        assert 100 >= xOffset + xOffsetLeft >= 0 and 100 >= xOffset + xOffsetRight >= 0, "xOffset must be a int Value between 0 and 100!"
-        assert 100 >= yOffset + yOffsetUp >= 0 and 100 >= yOffset + yOffsetDown >= 0, "yOffset must be a int Value between 0 and 100!"
-        self._data["placeRelData"] = {"handler":self["placeRelData"]["handler"],
-                                     "xOffset":xOffset,
-                                     "xOffsetLeft":xOffsetLeft,
-                                     "xOffsetRight":xOffsetRight,
-                                     "yOffset":yOffset,
-                                     "yOffsetUp":yOffsetUp,
-                                     "yOffsetDown":yOffsetDown,
-                                     "fixX":fixX,
-                                     "fixY":fixY,
-                                     "fixWidth":fixWidth,
-                                     "fixHeight":fixHeight,
-                                     "stickRight":stickRight,
-                                     "stickDown":stickDown,
-                                     "centerX":centerX,
-                                     "centerY":centerY,
-                                     "nextTo":nextTo,
-                                     "changeX":changeX,
-                                     "changeY":changeY,
-                                     "changeWidth":changeWidth,
-                                     "changeHeight":changeHeight}
-        self["tkMaster"]._updateDynamicSize(self)
-        if updateOnResize:
-            self["tkMaster"]._registerOnResize(self)
         return self
     def placeRelative(self, fixX:int=None, fixY:int=None, fixWidth:int=None, fixHeight:int=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
         """
@@ -2263,17 +2166,44 @@ class Widget:
         @param updateOnResize: True -> registers to update on resize (Default) | False -> update once
         @return:
         """
-        self._placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
+        assert 100 >= xOffset + xOffsetLeft >= 0 and 100 >= xOffset + xOffsetRight >= 0, "xOffset must be a int Value between 0 and 100!"
+        assert 100 >= yOffset + yOffsetUp >= 0 and 100 >= yOffset + yOffsetDown >= 0, "yOffset must be a int Value between 0 and 100!"
+        self._data["placeRelData"] = {"handler": self["placeRelData"]["handler"],
+                                      "xOffset": xOffset,
+                                      "xOffsetLeft": xOffsetLeft,
+                                      "xOffsetRight": xOffsetRight,
+                                      "yOffset": yOffset,
+                                      "yOffsetUp": yOffsetUp,
+                                      "yOffsetDown": yOffsetDown,
+                                      "fixX": fixX,
+                                      "fixY": fixY,
+                                      "fixWidth": fixWidth,
+                                      "fixHeight": fixHeight,
+                                      "stickRight": stickRight,
+                                      "stickDown": stickDown,
+                                      "centerX": centerX,
+                                      "centerY": centerY,
+                                      "nextTo": nextTo,
+                                      "changeX": changeX,
+                                      "changeY": changeY,
+                                      "changeWidth": changeWidth,
+                                      "changeHeight": changeHeight}
+        self["tkMaster"]._updateDynamicSize(self)
+        if updateOnResize:
+            self["tkMaster"]._registerOnResize(self)
         return self
-    def _place(self, x:int, y:int, width:int, height:int, anchor:Anchor):
+    def place(self, x=None, y=None, width=None, height=None, anchor:Anchor=Anchor.UP_LEFT):
         """
-        Private implementation of place.
+        Place the widget with fix coords and width and height.
+        width and height can be left out and be handled by tkinter to set is automatically.
 
-        @param x:
-        @param y:
-        @param width:
-        @param height:
-        @param anchor:
+        Can be overwritten!
+
+        @param x: X-Coordinate relative to the anchor.
+        @param y: Y-Coordinate relative to the anchor.
+        @param width: width of the widget.
+        @param height: height of the widget.
+        @param anchor: Set the fixpoint. Default: Upper left corner.
         @return:
         """
         assert not self["destroyed"], "The widget has been destroyed and can no longer be placed."
@@ -2293,39 +2223,19 @@ class Widget:
         self["widget"].place(x=x, y=y, width=width, height=height, anchor=anchor)
         self["placed"] = True
         return self
-    def place(self, x=None, y=None, width=None, height=None, anchor:Anchor=Anchor.UP_LEFT):
+    def placeForget(self):
         """
-        Place the widget with fix coords and width and height.
-        width and height can be left out and be handled by tkinter to set is automatically.
+        Removes this widget from its master.
+        Can be placed again after.
 
-        Can be overwritten!
-
-        @param x: X-Coordinate relative to the anchor.
-        @param y: Y-Coordinate relative to the anchor.
-        @param width: width of the widget.
-        @param height: height of the widget.
-        @param anchor: Set the fixpoint. Default: Upper left corner.
         @return:
         """
-        self._place(x, y, width, height, anchor)
-        return self
-    def _destroy(self):
-        assert not self["destroyed"], f"Widget {type(self)} {self.getID()} is already destroyed!"
-        self["registry"].unregisterAll()
+        try:
+            self["widget"].place_forget()
+            self["placed"] = False
+        except:
+            pass
         self["tkMaster"]._unregisterOnResize(self)
-        if WIDGET_DELETE_DEBUG: print(type(self["master"]), "->", type(self))
-        del self["master"]["childWidgets"][self["id"]] # unregister as child widget from master
-
-        WidgetGroup.removeFromAll(self)
-        if not isinstance(self, _ToolTip): # -> Ignore Widget is None
-            if not self["destroyed"]: self["widget"].destroy()
-        self["destroyed"] = True
-        self["placed"] = False
-        for w in self["childWidgets"].copy().values():
-            self["tkMaster"]._unregisterOnResize(w)
-            w.destroy()
-        self._data.clear()
-
     def destroy(self):
         """
         Destroys this widget.
@@ -2334,9 +2244,35 @@ class Widget:
         Can be overwritten!
         @return:
         """
-        self._destroy()
+        assert not self["destroyed"], f"Widget {type(self)} {self._getID()} is already destroyed!"
+        self["registry"].unregisterAll()
+        self["tkMaster"]._unregisterOnResize(self)
+        if WIDGET_DELETE_DEBUG: print(type(self["master"]), "->", type(self))
+        del self["master"]["childWidgets"][self["id"]]  # unregister as child widget from master
+
+        WidgetGroup.removeFromAll(self)
+        if not isinstance(self, _ToolTip):  # -> Ignore Widget is None
+            if not self["destroyed"]: self["widget"].destroy()
+        self["destroyed"] = True
+        self["placed"] = False
+        for w in self["childWidgets"].copy().values():
+            self["tkMaster"]._unregisterOnResize(w)
+            w.destroy()
+        self._data.clear()
         return self
-    def applyTkOption(self, **kwargs):
+    def lift(self, widg=None):
+        """
+        Lifts this widget in front of all other or in front of given Widget.
+
+        @param widg:
+        @return:
+        """
+        if widg is not None:
+            self["widget"].lift(widg._get())
+        else:
+            self["widget"].lift()
+    # Intern Methods
+    def _applyTkOption(self, **kwargs):
         """
         Apply one or more tkinter attribues to this widget.
 
@@ -2351,22 +2287,21 @@ class Widget:
         for k, v in zip(kwargs.keys(), kwargs.values()):
             self._setAttribute(k, v)
         return self
-    def getTkMaster(self)->Tk | Toplevel:
+    def _getTkMaster(self)-> Tk | Toplevel:
         """
         Returns the highest master (Tk/Toplevel) of this widget.
 
         @return:
         """
         return self["tkMaster"]
-    def clearChildWidgets(self):
+    def _clearChildWidgets(self):
         """
         Clears the child-widgets.
 
         @return:
         """
         self._data["childWidgets"].clear()
-
-    def addChildWidgets(self, *args):
+    def _addChildWidgets(self, *args):
         """
         Adds/Overwrites all Child widgets from this widget with new ones.
 
@@ -2375,8 +2310,7 @@ class Widget:
         """
         for w in args:
             self._data["childWidgets"][w["id"]] = w
-
-    def unregisterChildWidget(self, w):
+    def _unregisterChildWidget(self, w):
         """
         Unregisters specific Child widget from this Master.
 
@@ -2384,8 +2318,11 @@ class Widget:
         @return:
         """
         del self["childWidgets"][w["id"]]
-
-    def getID(self)->str:
+    def _setId(self, id_:str): #@TODO: why? maby error with event??
+        self["id"] = str(id_)
+    def _addData(self, _data:dict):
+        self._data = {**self._data, **_data}
+    def _getID(self)->str:
         """
         Returns this widget id.
 
@@ -2561,7 +2498,6 @@ class WidgetGroup:
         """
         for group in WidgetGroup._GROUPS:
             group.remove(widg)
-
 class Placer:
     def __init__(self, ySpace, yStart=0):
         self._ySpace = ySpace
@@ -2617,7 +2553,7 @@ class _ToolTip(Widget):
         if self["tip"]:
             text = self["text"] if mode == "release" else self["atext"]
             self["tipLabel"].destroy()
-            self["tipLabel"] = Label(self["tip"]).applyTkOption(text=text, justify='left', background="#ffffff", relief='solid', borderwidth=1, wraplength=self["wrapLength"])
+            self["tipLabel"] = Label(self["tip"])._applyTkOption(text=text, justify='left', background="#ffffff", relief='solid', borderwidth=1, wraplength=self["wrapLength"])
             self["tipLabel"]._get().pack(ipadx=1)
     def _enter(self, e):
         self._schedule()
@@ -2639,7 +2575,7 @@ class _ToolTip(Widget):
         self["tip"] = Toplevel(self["master"]["tkMaster"], group=self["group"])
         self["tip"].overrideredirect()
         self["tip"].setPositionOnScreen(mx, my+15)
-        self["tipLabel"] = Label(self["tip"], group=self["group"]).applyTkOption(
+        self["tipLabel"] = Label(self["tip"], group=self["group"])._applyTkOption(
             text=self["text"],
             justify='left',
             relief='solid',
@@ -3648,7 +3584,6 @@ class TextEntry(LabelFrame):
         @return:
         """
         offset = 5
-        self._place(x, y, 200, height, anchor)
         self._data["label"].place(0, 0)
         labelWidth = self._data["label"].getWidth()
         if entryStartX is not None: labelWidth = entryStartX
@@ -3659,7 +3594,6 @@ class TextEntry(LabelFrame):
             entryWidth = width - labelWidth
         self._data["label"].place(0, 0, labelWidth, height-offset)
         self._data["entry"].place(labelWidth, 0, entryWidth-offset, height-offset)
-        self._place(x, y, width, height, anchor)
         return self
     def placeRelative(self, fixX=None, fixY=None, fixWidth=None, fixHeight=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
         assert fixWidth is not None and fixHeight is not None, "fixWidth and fixHeight must be defined!"
@@ -4892,7 +4826,7 @@ class SpinBox(Widget):
     def _decryptEvent(self, args):
         return self.getValue()
 class DropdownMenu(Widget):
-    def __init__(self, _master, group=None, optionList:list=(), readonly=True):
+    def __init__(self, _master, group=None, optionList:list=[], readonly=True):
         if isinstance(_master, dict):
             self._data = _master
         elif isinstance(_master, self.__class__):
@@ -5213,7 +5147,7 @@ class Notebook(Widget):
         self["tabIndexList"].append(nbt)
         if group is None: group = self["group"]
         if group is not None: group.add(nbt)
-        self.addChildWidgets(nbt)
+        self._addChildWidgets(nbt)
         return nbt
     def _decryptEvent(self, args):
         return self.getSelectedTabIndex()
@@ -5343,141 +5277,6 @@ class Canvas(Widget):
     def clear(self):
         for i in list(self["canObjs"].values()).copy():
             i.destroy()
-
-class _DndHandler:
-    def __init__(self, canvas, _id, widget, widgetCreator):
-        self.canvas = canvas
-        self.widget = widget
-        self.widgetCreator = widgetCreator
-        self.id = _id
-    def press(self, event:Event):
-        tkArgs = event.getTkArgs()
-        event.printEventInfo()
-        if _dnd.dnd_start(self, tkArgs):
-            self.x_off = tkArgs.x
-            self.y_off = tkArgs.y
-    def dnd_end(self, target, event):
-        pass
-    def getWidgetCursorPos(self, event, canvas)->Location2D:
-        # widget position relative to the screen
-        rsx, rsy = canvas.getRelScreenPos()
-
-        # pointer relative to the canvas
-        return Location2D(
-            (event.x_root - rsx) - self.x_off,
-            (event.y_root - rsy) - self.y_off,
-        )
-
-class DndCanvas(Canvas):
-    def __init__(self, _master, group=None):
-        super().__init__(_master, group)
-        canvas = self._get()
-        canvas.dnd_accept = self._onDndWidget
-        self._outlineID = None
-        self["hide_widg_on_drag"] = False
-        self["drag_enabled"] = True
-        # register "private" methods
-        setattr(self, "dnd_accept", self._onDndWidget)
-        setattr(self, "dnd_enter", self._onDndEnter)
-        setattr(self, "dnd_motion", self._onDndMotion)
-        setattr(self, "dnd_leave", self._onDndLeave)
-        setattr(self, "dnd_commit", self._onDndCommit)
-    def _onDndWidget(self, dndHandl, event):
-        return self if self["drag_enabled"] else None
-    def _onDndEnter(self, dndHandl, event):
-        self.setFocus()
-        rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
-        x1, y1, x2, y2 = dndHandl.canvas._get().bbox(dndHandl.id) # WICHTIG .id impl
-
-        canvasRect = Rect(
-            Location2D(x1, y1),
-            Location2D(x2, y2)
-        )
-        self._outlineID = self["widget"].create_rectangle(rsx, rsy, rsx+canvasRect.getWidth(), rsy+canvasRect.getHeight())
-        self._onDndMotion(dndHandl, event)
-    def _onDndMotion(self, dndHandl, event):
-        if self["hide_widg_on_drag"]: dndHandl.canvas._get().itemconfigure(dndHandl.id, state="hidden")
-        rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
-        x1, y1, x2, y2 = self["widget"].bbox(self._outlineID)  # WICHTIG .id impl
-        self["widget"].move(self._outlineID, rsx-x1, rsy-y1)
-    def _onDndLeave(self, dndHandl, event):
-        self.getTkMaster().setFocus()
-        self["widget"].delete(self._outlineID)
-        self["widget"]["dnd_canvas"] = None
-        self._outlineID = None
-    def _onDndCommit(self, dndHandl, event):
-        self._onDndLeave(dndHandl, event)
-        rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
-        self.attachWidgetCreator(dndHandl.widget, rsx, rsy)
-
-    def disableDrag(self):
-        self["drag_enabled"] = False
-    def enableDrag(self):
-        self["drag_enabled"] = True
-    def setWidgetHiddenWhileDrag(self, b:bool=True):
-        self["hide_widg_on_drag"] = bool(b)
-        return self
-
-    def attachWidget(self, widget:Widget, x=0, y=0, width=None, height=None):
-        """
-        Attaches a widget to be dragged on this canvas.
-        Only on this canvas. If multi-canvas dragging is needed use 'DndCanvas.attachWidgetCreator' method.
-        """
-        if "dnd_canvas" not in widget._data.keys():
-            widget["dnd_canvas"] = None
-        if widget["dnd_canvas"] is None: # register
-            _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
-            widget["dnd_canvas"] = _DndHandler(self, _id, widget, None)
-            widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
-        else:
-            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
-            _id = self._get().create_window(x, y, width=width, height=height, window=widget._get(), anchor="nw")
-            widget["dnd_canvas"].id = _id
-
-
-    def attachWidgetCreator(self, widgetCreator:Callable, x=0, y=0):
-        """
-        Attaches a function which creates a widget.
-        This widget can be dragged around on this canvas and to other canvases.
-        Attach the widget again if you need to change any widget attribute.
-
-        The passed function have to look like this:
-
-        def function(root):
-            label = Label(root)
-            ...
-            return label
-
-        @param widgetCreator: function to create dragged widget.
-        @param x: x position of widget.
-        @param y: y position of widget.
-        @return:
-        """
-        if isinstance(widgetCreator, Widget):
-            _widget = widgetCreator
-            widgetCreator = widgetCreator["dnd_canvas"].widgetCreator
-            self.detachWidget(_widget)
-        widget = widgetCreator(self)
-        # check and register variables
-        if "dnd_canvas" not in widget._data.keys():
-            widget["dnd_canvas"] = None
-        # check if already registered to this canvas
-        if widget["dnd_canvas"] is not None:
-            if widget["dnd_canvas"].widget.getID() == self.getID():
-                return
-            self.detachWidget(widget)
-        _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
-        widget["dnd_canvas"] = _DndHandler(self, _id, widget, widgetCreator)
-        widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
-    def detachWidget(self, widget:Widget):
-        if "dnd_canvas" not in widget._data.keys():
-            widget["dnd_canvas"] = None
-        if widget["dnd_canvas"] is not None:
-            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
-            widget["registry"].unregisterType("<ButtonPress>")
-            print("destroy")
-            widget._get().destroy()
-
 class CanvasObject:
     def __init__(self, _ins, _data, group):
         if group is not None:
@@ -5656,6 +5455,139 @@ class CanvasText(CanvasObject):
     def setTextAngle(self, a):
         self["data"]["angle"] = int(a)
         return self
+
+class _DndHandler:
+    def __init__(self, canvas, _id, widget, widgetCreator):
+        self.canvas = canvas
+        self.widget = widget
+        self.widgetCreator = widgetCreator
+        self.id = _id
+    def press(self, event:Event):
+        tkArgs = event.getTkArgs()
+        event.printEventInfo()
+        if _dnd.dnd_start(self, tkArgs):
+            self.x_off = tkArgs.x
+            self.y_off = tkArgs.y
+    def dnd_end(self, target, event):
+        pass
+    def getWidgetCursorPos(self, event, canvas)->Location2D:
+        # widget position relative to the screen
+        rsx, rsy = canvas.getRelScreenPos()
+
+        # pointer relative to the canvas
+        return Location2D(
+            (event.x_root - rsx) - self.x_off,
+            (event.y_root - rsy) - self.y_off,
+        )
+class DndCanvas(Canvas):
+    def __init__(self, _master, group=None):
+        super().__init__(_master, group)
+        canvas = self._get()
+        canvas.dnd_accept = self._onDndWidget
+        self._outlineID = None
+        self["hide_widg_on_drag"] = False
+        self["drag_enabled"] = True
+        # register "private" methods
+        setattr(self, "dnd_accept", self._onDndWidget)
+        setattr(self, "dnd_enter", self._onDndEnter)
+        setattr(self, "dnd_motion", self._onDndMotion)
+        setattr(self, "dnd_leave", self._onDndLeave)
+        setattr(self, "dnd_commit", self._onDndCommit)
+    def _onDndWidget(self, dndHandl, event):
+        return self if self["drag_enabled"] else None
+    def _onDndEnter(self, dndHandl, event):
+        self.setFocus()
+        rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
+        x1, y1, x2, y2 = dndHandl.canvas._get().bbox(dndHandl.id) # WICHTIG .id impl
+
+        canvasRect = Rect(
+            Location2D(x1, y1),
+            Location2D(x2, y2)
+        )
+        self._outlineID = self["widget"].create_rectangle(rsx, rsy, rsx+canvasRect.getWidth(), rsy+canvasRect.getHeight())
+        self._onDndMotion(dndHandl, event)
+    def _onDndMotion(self, dndHandl, event):
+        if self["hide_widg_on_drag"]: dndHandl.canvas._get().itemconfigure(dndHandl.id, state="hidden")
+        rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
+        x1, y1, x2, y2 = self["widget"].bbox(self._outlineID)  # WICHTIG .id impl
+        self["widget"].move(self._outlineID, rsx-x1, rsy-y1)
+    def _onDndLeave(self, dndHandl, event):
+        self._getTkMaster().setFocus()
+        self["widget"].delete(self._outlineID)
+        self["widget"]["dnd_canvas"] = None
+        self._outlineID = None
+    def _onDndCommit(self, dndHandl, event):
+        self._onDndLeave(dndHandl, event)
+        rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
+        self.attachWidgetCreator(dndHandl.widget, rsx, rsy)
+
+    def disableDrag(self):
+        self["drag_enabled"] = False
+    def enableDrag(self):
+        self["drag_enabled"] = True
+    def setWidgetHiddenWhileDrag(self, b:bool=True):
+        self["hide_widg_on_drag"] = bool(b)
+        return self
+
+    def attachWidget(self, widget:Widget, x=0, y=0, width=None, height=None):
+        """
+        Attaches a widget to be dragged on this canvas.
+        Only on this canvas. If multi-canvas dragging is needed use 'DndCanvas.attachWidgetCreator' method.
+        """
+        if "dnd_canvas" not in widget._data.keys():
+            widget["dnd_canvas"] = None
+        if widget["dnd_canvas"] is None: # register
+            _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
+            widget["dnd_canvas"] = _DndHandler(self, _id, widget, None)
+            widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
+        else:
+            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
+            _id = self._get().create_window(x, y, width=width, height=height, window=widget._get(), anchor="nw")
+            widget["dnd_canvas"].id = _id
+
+
+    def attachWidgetCreator(self, widgetCreator:Callable, x=0, y=0):
+        """
+        Attaches a function which creates a widget.
+        This widget can be dragged around on this canvas and to other canvases.
+        Attach the widget again if you need to change any widget attribute.
+
+        The passed function have to look like this:
+
+        def function(root):
+            label = Label(root)
+            ...
+            return label
+
+        @param widgetCreator: function to create dragged widget.
+        @param x: x position of widget.
+        @param y: y position of widget.
+        @return:
+        """
+        if isinstance(widgetCreator, Widget):
+            _widget = widgetCreator
+            widgetCreator = widgetCreator["dnd_canvas"].widgetCreator
+            self.detachWidget(_widget)
+        widget = widgetCreator(self)
+        # check and register variables
+        if "dnd_canvas" not in widget._data.keys():
+            widget["dnd_canvas"] = None
+        # check if already registered to this canvas
+        if widget["dnd_canvas"] is not None:
+            if widget["dnd_canvas"].widget._getID() == self._getID():
+                return
+            self.detachWidget(widget)
+        _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
+        widget["dnd_canvas"] = _DndHandler(self, _id, widget, widgetCreator)
+        widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
+    def detachWidget(self, widget:Widget):
+        if "dnd_canvas" not in widget._data.keys():
+            widget["dnd_canvas"] = None
+        if widget["dnd_canvas"] is not None:
+            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
+            widget["registry"].unregisterType("<ButtonPress>")
+            print("destroy")
+            widget._get().destroy()
 
 class FileDialog:
     @staticmethod
