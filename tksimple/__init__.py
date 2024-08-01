@@ -1,20 +1,19 @@
-﻿import tkinter.simpledialog as simd
+﻿import os
+import tkinter as _tk_
 import tkinter.colorchooser as colorChooser
-import tkinter.messagebox as msg
+import tkinter.dnd as _dnd
 import tkinter.filedialog as fd
 import tkinter.font as _font
+import tkinter.messagebox as msg
+import tkinter.simpledialog as simd
 import tkinter.ttk as ttk
-import tkinter.dnd as _dnd
-import tkinter as _tk_
-from threading import Thread
-from typing import Union, Callable, Iterable, List
 from datetime import date
 from enum import Enum
-from traceback import format_exc
 from random import randint, choice
-from time import strftime, time, sleep
 from string import ascii_lowercase
-import os
+from time import strftime, time, sleep
+from traceback import format_exc
+from typing import Union, Callable, Iterable, List
 
 #TODO parameter description in __init__
 #TODO parameter type in __init__
@@ -2968,7 +2967,7 @@ class Checkbutton(Widget):
     Widget:
     The Checkbutton is basicly a Label with a checkbox on the left.
     """
-    def __init__(self, _master, group=None):
+    def __init__(self, _master, group=None, __widgetClass=_tk_.Checkbutton):
         self.getValue = self.getState
         self.setValue = self.setState
         if isinstance(_master, dict):
@@ -2980,7 +2979,7 @@ class Checkbutton(Widget):
             _master._widgets.append(["checkbutton", self])
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             intVar = _tk_.IntVar(_master._get())
-            self._data = {"master":_master, "text":"", "widget":_tk_.Checkbutton(_master._get()), "intVar":intVar, "init":{"variable":intVar}}
+            self._data = {"master":_master, "text":"", "widget":__widgetClass(_master._get()), "intVar":intVar, "init":{"variable":intVar}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -3040,6 +3039,9 @@ class Checkbutton(Widget):
         """
         self._setAttribute("selectcolor", c.value if hasattr(c, "value") else c)
         return self
+class CheckbuttonTTK(Checkbutton):
+    def __init__(self, _master, group=None):
+        super().__init__(_master, group, __widgetClass=ttk.Checkbutton)
 class Radiobutton:
     """
     Widget:
