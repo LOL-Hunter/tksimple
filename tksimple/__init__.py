@@ -1823,7 +1823,7 @@ class Widget:
         if not hasattr(other, "_data"): return False
         return self._data == other._data
     def __del__(self):
-        #print("__DELETE__", type(self))
+        print("__DELETE__", type(self))
         if not len(self._data): return
         if self["group"] is not None:
             self["group"].remove(self._ins)
@@ -2569,7 +2569,7 @@ class _ToolTip(Widget):
     def _show(self):
         if self["disableTip"]:
             return
-        mx, my = (self["master"].getTkMaster()._get().winfo_pointerx(), self["master"].getTkMaster()._get().winfo_pointery())
+        mx, my = (self["master"]._getTkMaster()._get().winfo_pointerx(), self["master"]._getTkMaster()._get().winfo_pointery())
         self._hidetip()
         self["tip"] = Toplevel(self["master"]["tkMaster"], group=self["group"])
         self["tip"].overrideredirect()
@@ -2967,7 +2967,7 @@ class Checkbutton(Widget):
     Widget:
     The Checkbutton is basicly a Label with a checkbox on the left.
     """
-    def __init__(self, _master, group=None, __widgetClass=_tk_.Checkbutton):
+    def __init__(self, _master, group=None, widgetClass=_tk_.Checkbutton):
         self.getValue = self.getState
         self.setValue = self.setState
         if isinstance(_master, dict):
@@ -2979,7 +2979,7 @@ class Checkbutton(Widget):
             _master._widgets.append(["checkbutton", self])
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             intVar = _tk_.IntVar(_master._get())
-            self._data = {"master":_master, "text":"", "widget":__widgetClass(_master._get()), "intVar":intVar, "init":{"variable":intVar}}
+            self._data = {"master":_master, "text":"", "widget":widgetClass(_master._get()), "intVar":intVar, "init":{"variable":intVar}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -3041,7 +3041,7 @@ class Checkbutton(Widget):
         return self
 class CheckbuttonTTK(Checkbutton):
     def __init__(self, _master, group=None):
-        super().__init__(_master, group, __widgetClass=ttk.Checkbutton)
+        super().__init__(_master, group, widgetClass=ttk.Checkbutton)
 class Radiobutton:
     """
     Widget:
