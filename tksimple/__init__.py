@@ -1,15 +1,15 @@
-﻿import os
-import tkinter as _tk_
-import tkinter.colorchooser as colorChooser
+﻿import tkinter as _tk
+import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
-import tkinter.filedialog as fd
+import tkinter.filedialog as _fd
 import tkinter.font as _font
-import tkinter.messagebox as msg
-import tkinter.simpledialog as simd
-import tkinter.ttk as ttk
-from datetime import date
-from enum import Enum
-from random import randint, choice
+import tkinter.messagebox as _msgb
+import tkinter.simpledialog as _simd
+import tkinter.ttk as _ttk
+import os
+from datetime import date as _date
+from enum import Enum as _Enum
+from random import randint as _randint, choice as _choice
 from string import ascii_lowercase
 from time import strftime, time, sleep
 from traceback import format_exc
@@ -143,9 +143,6 @@ class Rect:
     @staticmethod
     def fromLocWidthHeight(loc:Location2D, width:int | float=0, height:int | float=0):
         return Rect(loc, loc.clone().change(x=width, y=height))
-    """@staticmethod
-    def fromTkWidget(w):
-        return Rect(w.)"""
     def __repr__(self):
         return "Rect("+str(self.loc1)+", "+str(self.loc2)+")"
     @property
@@ -210,21 +207,21 @@ class Symbol:
     DICE_4 = "\u2683"
     DICE_5 = "\u2684"
     DICE_6 = "\u2685"
-class FontType(Enum):
+class FontType(_Enum):
     """
-    FontTypes enum
+    FontTypes _Enum
     """
     #TODO: add more font types
     ARIAL ="arial"
-class Orient(Enum):
+class Orient(_Enum):
     """
-    Enum to specify the Orientation
+    _Enum to specify the Orientation
     """
     HORIZONTAL = "horizontal"
     VERTICAL = "vertical"
-class Style(Enum):
+class Style(_Enum):
     """
-    Enum to specify widget style.
+    _Enum to specify widget style.
     """
     FLAT = "flat"
     SOLID = "solid"
@@ -232,9 +229,9 @@ class Style(Enum):
     SUNKEN = "sunken"
     GROOVE = "groove"
     RIDGE = "ridge"
-class Anchor(Enum):
+class Anchor(_Enum):
     """
-    Enum to specify the Anchor.
+    _Enum to specify the Anchor.
     """
     NW = UP_LEFT = "nw"
     NE = UP_RIGHT = "ne"
@@ -245,14 +242,14 @@ class Anchor(Enum):
     E = RIGHT = "e"
     S = DOWN = "s"
     W = LEFT = "w"
-class Direction(Enum):
+class Direction(_Enum):
     LEFT = "left"
     RIGHT = "right"
     CENTER = "center"
     NONE = "none"
     TOP = "top"
     BOTTOM = "bottom"
-class Color(Enum):
+class Color(_Enum):
     DEFAULT = "#F0F0F0"
     WHITE = "white"
     BLACK = "black"
@@ -269,11 +266,11 @@ class Color(Enum):
     @staticmethod
     def hex(hex_:str):
         return hex_
-class Wrap(Enum):
+class Wrap(_Enum):
     NONE = "none"
     WORD = "word"
     CHAR = "char"
-class Cursor(Enum):
+class Cursor(_Enum):
     NONE = "none"
     WIN_DEFAULT = "arrow"
     WIN_TURN = "exchange"
@@ -305,14 +302,14 @@ class Cursor(Enum):
     CUSTOM_TARGET = "target"
     CUSTOM_TRECK = "trek"
 
-class Key(Enum):
+class Key(_Enum):
     SHIFT = "<Shift>"
     RETURN = "<Return>"
     DOWN = "<Down>"
     RIGHT = "<Right>"
     LEFT = "<Left>"
     UP = "<Up>"
-class Mouse(Enum):
+class Mouse(_Enum):
     MOUSE_MOTION = "<Motion>"
     WHEEL_MOTION = "<MouseWheel>"
 
@@ -336,10 +333,10 @@ class Mouse(Enum):
     DOUBBLE_RIGHT = "<Double-Button-2>"
     DOUBBLE_MIDDLE = "<Double-Button-3>"
 
-class FunctionKey(Enum):
+class FunctionKey(_Enum):
     CONTROL = CTRL = "Control"
     ALT = "Alt"
-class EventType(Enum):
+class EventType(_Enum):
 
     def __add__(self, other):
         this = self.value.replace("<", "").replace(">", "")
@@ -438,10 +435,10 @@ class EventType(Enum):
     CUSTOM_RELATIVE_UPDATE_AFTER = "[relative_update_after]" # [x, y, width, height]
 
     @staticmethod
-    def mouse(m):
+    def mouse(m: str):
         return m
     @staticmethod
-    def key(k):
+    def key(k: str):
         return k
     @staticmethod
     def keyDown(k):
@@ -607,15 +604,15 @@ class TkImage:
     Default tkinter image adapter.
     Use 'TkImage.loadImage(<path>)' to load image from string path.
     """
-    def __init__(self, image:_tk_.PhotoImage):
-        if isinstance(image, _tk_.PhotoImage):
+    def __init__(self, image:_tk.PhotoImage):
+        if isinstance(image, _tk.PhotoImage):
             self.image = image
         else:
             raise TKExceptions.InvalidUsageException("Use 'Image.loadImage(<path>)' instad! Not:" + str(type(image)))
     @staticmethod
     def loadImage(path:str):
         if os.path.exists(path):
-            return TkImage(_tk_.PhotoImage(file=path))
+            return TkImage(_tk.PhotoImage(file=path))
         else:
             raise TKExceptions.PathNotExisits("This path does not Exists: " + str(path))
     def resize(self, f:int):
@@ -1073,7 +1070,7 @@ class _IntVar:
     def __init__(self, _master):
         self.index = -1
         self.command = None
-        self._intvar = _tk_.IntVar(_master._get())
+        self._intvar = _tk.IntVar(_master._get())
     def _add(self):
         self.index +=1
         return self.index
@@ -1096,7 +1093,7 @@ class Tk:
         self.withdraw = self.hide
         self.setBackgroundColor = self.setBg
         if _master is None:
-            self._data = {"master": _tk_.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "setSize":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":""}
+            self._data = {"master": _tk.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "setSize":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":""}
             #configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, dict):
@@ -1223,7 +1220,7 @@ class Tk:
         Binds a specific event to the Window. Runs given function on trigger.
 
         @param func: function get called on trigger
-        @param event: Event type: EventType enum or default tkinter event as string.
+        @param event: Event type: EventType _Enum or default tkinter event as string.
         @param args: Additional arguments as List.
         @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
@@ -1275,7 +1272,7 @@ class Tk:
         raise NotImplemented()
     def setCursor(self, c:Union[Cursor, str]):
         """
-        Set cursor image from Cursor enum or default tkinter string.
+        Set cursor image from Cursor _Enum or default tkinter string.
 
         @note only predefined cursors are implented yet
         @param c:
@@ -1463,7 +1460,7 @@ class Tk:
         """
         Set the Background Color of the Window.
 
-        @param col: Use Color enum, tkinter string or hex-code.
+        @param col: Use Color _Enum, tkinter string or hex-code.
         @return:
         """
         self["master"]["bg"] = col.value if hasattr(col, "value") else col
@@ -1722,8 +1719,8 @@ class Tk:
         print("==Hierarchy==")
         def point(_widget):
             for cw in _widget["childWidgets"].values():
-                #print("".join([("| " if not isinstance(cw, _tk_.Tk) and not isinstance(cw["master"], _tk_.Tk) and not isinstance(cw["master"]["master"], _tk_.Tk) and any([index == (len(Tk._getAllParentWidgets(cw))-2)]) and list(cw["master"]["master"]["childWidgets"].values()).index(cw["master"]) != len(list(cw["master"]["master"]["childWidgets"].values()))-1 else "  ") for index in range(len(Tk._getAllParentWidgets(cw))-1)]) + ("└" if len(_widget["childWidgets"].values())-1 == list(_widget["childWidgets"].values()).index(cw) else "├")+"─"+cw.__class__.__name__)
-                print("".join([("| " if not isinstance(cw, _tk_.Tk) and not isinstance(cw["master"], _tk_.Tk) and not isinstance(cw["master"]["master"], _tk_.Tk) and any([index == (len(Tk._getAllParentWidgets(cw))-2)]) and list(cw["master"]["master"]["childWidgets"].values()).index(cw["master"]) != len(list(cw["master"]["master"]["childWidgets"].values()))-1 else "  ") for index in range(len(Tk._getAllParentWidgets(cw))-1)]) + ("" if len(_widget["childWidgets"].values())-1 == list(_widget["childWidgets"].values()).index(cw) else "")+""+cw.__class__.__name__)
+                #print("".join([("| " if not isinstance(cw, _tk.Tk) and not isinstance(cw["master"], _tk.Tk) and not isinstance(cw["master"]["master"], _tk.Tk) and any([index == (len(Tk._getAllParentWidgets(cw))-2)]) and list(cw["master"]["master"]["childWidgets"].values()).index(cw["master"]) != len(list(cw["master"]["master"]["childWidgets"].values()))-1 else "  ") for index in range(len(Tk._getAllParentWidgets(cw))-1)]) + ("└" if len(_widget["childWidgets"].values())-1 == list(_widget["childWidgets"].values()).index(cw) else "├")+"─"+cw.__class__.__name__)
+                print("".join([("| " if not isinstance(cw, _tk.Tk) and not isinstance(cw["master"], _tk.Tk) and not isinstance(cw["master"]["master"], _tk.Tk) and any([index == (len(Tk._getAllParentWidgets(cw))-2)]) and list(cw["master"]["master"]["childWidgets"].values()).index(cw["master"]) != len(list(cw["master"]["master"]["childWidgets"].values()))-1 else "  ") for index in range(len(Tk._getAllParentWidgets(cw))-1)]) + ("" if len(_widget["childWidgets"].values())-1 == list(_widget["childWidgets"].values()).index(cw) else "")+""+cw.__class__.__name__)
                 point(cw)
         print(widget.__class__.__name__)
         point(widget)
@@ -1737,12 +1734,12 @@ class Toplevel(Tk):
     """
     def __init__(self, _master, group=None, topMost=True):
         if isinstance(_master, Tk):
-            self._data = {"master": _tk_.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "setSize":(), "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
+            self._data = {"master": _tk.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "setSize":(), "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
             _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, str) and _master == "Tk":
-            self._data = {"master":_tk_.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "setSize":(),"isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
+            self._data = {"master":_tk.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "setSize":(),"isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(_randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
             _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
@@ -1758,7 +1755,7 @@ class Toplevel(Tk):
 
         @return:
         """
-        if isinstance(self["master"], _tk_.Tk):
+        if isinstance(self["master"], _tk.Tk):
             self["master"].mainloop()
 class Dialog(Toplevel):
     """
@@ -1801,7 +1798,7 @@ class Widget:
         if list(_data.keys()).__contains__("id"): self._data = _data
         else:
             _data["tkMaster"] = _data["master"] if isinstance(_data["master"], Tk) else _data["master"]["tkMaster"]
-            id = "".join([str(randint(0,9)) for _ in range(15)])
+            id = "".join([str(_randint(0,9)) for _ in range(15)])
             self._data = {**_data, **{"widgetProperties":{},"childWidgets":{}, "id":id, "placed":True, "destroyed":False, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "group":group}}
             self._data["master"]["childWidgets"][self["id"]] = self._ins
             if list(_data.keys()).__contains__("init"):
@@ -1823,7 +1820,7 @@ class Widget:
         if not hasattr(other, "_data"): return False
         return self._data == other._data
     def __del__(self):
-        print("__DELETE__", type(self))
+        #print("__DELETE__", type(self))
         if not len(self._data): return
         if self["group"] is not None:
             self["group"].remove(self._ins)
@@ -1833,7 +1830,7 @@ class Widget:
         """
         Set the background color of this widget.
 
-        @param col: Use Color enum, tkinter string or hex-code.
+        @param col: Use Color _Enum, tkinter string or hex-code.
         @return:
         """
         self._setAttribute("bg", col.value if hasattr(col, "value") else col)
@@ -1842,7 +1839,7 @@ class Widget:
         """
         Set the text color of this widget.
 
-        @param col: Use Color enum, tkinter string or hex-code.
+        @param col: Use Color _Enum, tkinter string or hex-code.
         @return:
         """
         self._setAttribute("fg", col.value if hasattr(col, "value") else col)
@@ -1889,7 +1886,7 @@ class Widget:
         return self
     def setOrientation(self, ori:Orient):
         """
-        Set the Orientation via Orient enum.
+        Set the Orientation via Orient _Enum.
         Used for process bars, Scales etc.
         Possible orientations:
             'Orient.HORIZONTAL'
@@ -1903,7 +1900,7 @@ class Widget:
     def setStyle(self, style:Style):
         """
         Set widget style.
-        Use Style enum to choose between styles.
+        Use Style _Enum to choose between styles.
 
         @param style:
         @return:
@@ -1934,7 +1931,7 @@ class Widget:
         return self
     def setCursor(self, c:Cursor):
         """
-        Set cursor image from Cursor enum or default tkinter string.
+        Set cursor image from Cursor _Enum or default tkinter string.
         This only applies while hovering over this widget.
 
         @note only predefined cursors are implemented yet
@@ -1949,7 +1946,7 @@ class Widget:
 
         @return:
         """
-        self._setAttribute("state", _tk_.DISABLED)
+        self._setAttribute("state", _tk.DISABLED)
         return self
     def setEnabled(self):
         """
@@ -1957,7 +1954,7 @@ class Widget:
 
         @return:
         """
-        self._setAttribute("state", _tk_.NORMAL)
+        self._setAttribute("state", _tk.NORMAL)
         return self
     # Attribute Getter Methods
     def getText(self):
@@ -2083,7 +2080,7 @@ class Widget:
         Binds a specific event to the Widget. Runs given function on trigger.
 
         @param func: function get called on trigger
-        @param event: Event type: EventType enum or default tkinter event as string.
+        @param event: Event type: EventType _Enum or default tkinter event as string.
         @param args: Additional arguments as List.
         @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
@@ -2505,6 +2502,30 @@ class Placer:
         x = self._yStart
         self._yStart += self._ySpace
         return x
+class StyleBuilder:
+    _STYLE = None
+    def __init__(self):
+        if StyleBuilder._STYLE is None: StyleBuilder._STYLE = _ttk.Style
+        self._id = "".join([str(_randint(0,9)) for _ in range(15)])
+        self._settings = {}
+
+    def TProcessbar(self):
+        pass
+
+        return self
+
+    def build(self)->str:
+        StyleBuilder._STYLE.theme_create(self._id, parent="alt", settings=self._settings)
+        return self._id
+
+    @staticmethod
+    def applyTheme(id_:str):
+        assert StyleBuilder._STYLE is not None, "There is no Style created yet!"
+        StyleBuilder._STYLE.theme_use(id_)
+
+
+
+
 
 class _ToolTip(Widget):
     """
@@ -2700,7 +2721,7 @@ class Calendar(Widget):
         d = int(d)
         m = int(m)
         y = int(y)
-        self._setAttribute("maxdate", date(y, m, d))
+        self._setAttribute("maxdate", _date(y, m, d))
         return self
     def setMinDate(self, d, m, y):
         """
@@ -2714,7 +2735,7 @@ class Calendar(Widget):
         d = int(d)
         m = int(m)
         y = int(y)
-        self._setAttribute("mindate", date(y, m, d))
+        self._setAttribute("mindate", _date(y, m, d))
         return self
     def getValue(self):
         """
@@ -2779,7 +2800,7 @@ class DropdownCalendar(Widget):
         d = int(d)
         m = int(m)
         y = int(y)
-        self._setAttribute("maxdate", date(y, m, d))
+        self._setAttribute("maxdate", _date(y, m, d))
         return self
     def setMinDate(self, d, m, y):
         """
@@ -2793,7 +2814,7 @@ class DropdownCalendar(Widget):
         d = int(d)
         m = int(m)
         y = int(y)
-        self._setAttribute("mindate", date(y, m, d))
+        self._setAttribute("mindate", _date(y, m, d))
         return self
     def getValue(self):
         """
@@ -2826,7 +2847,7 @@ class ScrollBar(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master, "widget": ttk.Scrollbar(_master._get()), "autoPlace":autoPlace, "thickness":18, "init": {}}
+            self._data = {"master": _master, "widget": _ttk.Scrollbar(_master._get()), "autoPlace":autoPlace, "thickness":18, "init": {}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -2873,7 +2894,7 @@ class Frame(Widget):
         if isinstance(_master, dict):
             self._data = _master
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget": _tk_.Frame(_master._get())}
+            self._data = {"master": _master,  "widget": _tk.Frame(_master._get())}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -2903,7 +2924,7 @@ class LabelFrame(Widget):
             self._data = _master
 
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget": _tk_.LabelFrame(_master._get())}
+            self._data = {"master": _master,  "widget": _tk.LabelFrame(_master._get())}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -2934,7 +2955,7 @@ class Label(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "widget":_tk_.Label(_master._get()), "init":kwargs}
+            self._data = {"master":_master,  "widget":_tk.Label(_master._get()), "init":kwargs}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+" or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -2967,7 +2988,7 @@ class Checkbutton(Widget):
     Widget:
     The Checkbutton is basicly a Label with a checkbox on the left.
     """
-    def __init__(self, _master, group=None, widgetClass=_tk_.Checkbutton):
+    def __init__(self, _master, group=None, widgetClass=_tk.Checkbutton):
         self.getValue = self.getState
         self.setValue = self.setState
         if isinstance(_master, dict):
@@ -2975,10 +2996,10 @@ class Checkbutton(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, _SubMenu):
-            self._data = {"master": _master._master,  "widget": _tk_.Checkbutton(_master._master._get()), "instanceOfMenu":True}
+            self._data = {"master": _master._master,  "widget": _tk.Checkbutton(_master._master._get()), "instanceOfMenu":True}
             _master._widgets.append(["checkbutton", self])
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            intVar = _tk_.IntVar(_master._get())
+            intVar = _tk.IntVar(_master._get())
             self._data = {"master":_master, "text":"", "widget":widgetClass(_master._get()), "intVar":intVar, "init":{"variable":intVar}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
@@ -3041,7 +3062,7 @@ class Checkbutton(Widget):
         return self
 class CheckbuttonTTK(Checkbutton):
     def __init__(self, _master, group=None):
-        super().__init__(_master, group, widgetClass=ttk.Checkbutton)
+        super().__init__(_master, group, widgetClass=_ttk.Checkbutton)
 class Radiobutton:
     """
     Widget:
@@ -3112,7 +3133,7 @@ class _RadioButton(Widget):
     Represents a single Radiobutton widget.
     """
     def __init__(self, _master, intVar, group):
-        self._data = {"master": _master, "widget": _tk_.Radiobutton(_master._get()), "intvar": intVar, "init": {"variable": intVar._get(), "value": intVar._add()}}
+        self._data = {"master": _master, "widget": _tk.Radiobutton(_master._get()), "intvar": intVar, "init": {"variable": intVar._get(), "value": intVar._add()}}
         super().__init__(self, self._data, group)
     def setSelected(self):
         """
@@ -3158,14 +3179,14 @@ class Button(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master, "widget":_tk_.Button(_master._get()), "canBePressedByReturn":canBePressedByReturn, "instanceOfMenu":False, "init":{"text":text}}
+            self._data = {"master":_master, "widget":_tk.Button(_master._get()), "canBePressedByReturn":canBePressedByReturn, "instanceOfMenu":False, "init":{"text":text}}
             if not fireOnlyOnce:
                 self._data["init"]["repeatdelay"] = int(firstDelay * 1000)
                 self._data["init"]["repeatinterval"] = int(fireInterval * 1000)
         elif isinstance(_master, _SubMenu) or isinstance(_master, ContextMenu):
             group = None # not possible!
             if isinstance(_master, ContextMenu): _master = _master["mainSubMenu"]
-            self._data = {"master":_master._master, "widget":_tk_.Button(_master._master._get()), "instanceOfMenu":True}
+            self._data = {"master":_master._master, "widget":_tk.Button(_master._master._get()), "instanceOfMenu":True}
             _master._widgets.append(["command", self])
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__))
@@ -3187,7 +3208,7 @@ class Button(Widget):
         Set the active background color.
         Visible if button is pressed.
 
-        @param col: Use Color enum, tkinter string or hex-code.
+        @param col: Use Color _Enum, tkinter string or hex-code.
         @return:
         """
         self._setAttribute("activebackground", col.value if hasattr(col, "value") else col)
@@ -3197,7 +3218,7 @@ class Button(Widget):
         Set the active foreground color.
         Visible if button is pressed.
 
-        @param col: Use Color enum, tkinter string or hex-code.
+        @param col: Use Color _Enum, tkinter string or hex-code.
         @return:
         """
         self._setAttribute("activeforeground", col.value if hasattr(col, "value") else col)
@@ -3205,7 +3226,7 @@ class Button(Widget):
     def setStyleOnHover(self, style:Style):
         """
         Changes the Style on hover.
-        Use the Style enum to change.
+        Use the Style _Enum to change.
         @param style:
         @return:
         """
@@ -3260,7 +3281,7 @@ class OnOffButton(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "text":text, "widget":_tk_.Button(_master._get()), "value":default, "relief":reliefActive, "color":colorsActive, "onText":None, "offText":None, "init":{"text":text}}
+            self._data = {"master":_master,  "text":text, "widget":_tk.Button(_master._get()), "value":default, "relief":reliefActive, "color":colorsActive, "onText":None, "offText":None, "init":{"text":text}}
             if default:
                 if colorsActive: self._data["init"]["bg"] = Color.GREEN.value
                 if reliefActive: self._data["init"]["relief"] = Style.SUNKEN.value
@@ -3364,7 +3385,7 @@ class Entry(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "widget":_tk_.Entry(_master._get())}
+            self._data = {"master":_master,  "widget":_tk.Entry(_master._get())}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -3376,7 +3397,7 @@ class Entry(Widget):
         @return:
         """
         self["xScrollbar"] = sc
-        sc["widget"]["orient"] = _tk_.HORIZONTAL
+        sc["widget"]["orient"] = _tk.HORIZONTAL
         sc["widget"]["command"] = self._scrollHandler
         self["widget"]["xscrollcommand"] = sc["widget"].set
     def setCursorBlinkDelay(self, d:float):
@@ -3447,7 +3468,7 @@ class Entry(Widget):
         Clears the Entry.
         @return:
         """
-        self["widget"].delete(0, _tk_.END)
+        self["widget"].delete(0, _tk.END)
         return self
     def setText(self, text:str):
         """
@@ -3504,7 +3525,7 @@ class TextEntry(LabelFrame):
         Binds a specific event to the Widget. Runs given function on trigger.
 
         @param func: function get called on trigger
-        @param event: Event type: EventType enum or default tkinter event as string.
+        @param event: Event type: EventType _Enum or default tkinter event as string.
         @param args: Additional arguments as List.
         @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
@@ -3642,7 +3663,7 @@ class TextDropdownMenu(Widget):
         Binds a specific event to the Widget. Runs given function on trigger.
 
         @param func: function get called on trigger
-        @param event:  Event type: EventType enum or default tkinter event as string.
+        @param event:  Event type: EventType _Enum or default tkinter event as string.
         @param args: Additional arguments as List.
         @param priority: If several equal events are bound, it's possible to set priorities.
         @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
@@ -3709,7 +3730,7 @@ class Listbox(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "widget":_tk_.Listbox(_master._get()), "selectionMode":"single", "init":{"selectmode":"single"}, "default_color":Color.DEFAULT}
+            self._data = {"master":_master,  "widget":_tk.Listbox(_master._get()), "selectionMode":"single", "init":{"selectmode":"single"}, "default_color":Color.DEFAULT}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -3783,7 +3804,7 @@ class Listbox(Widget):
         @return:
         """
         self["yScrollbar"] = sc
-        sc["widget"]["orient"] = _tk_.VERTICAL
+        sc["widget"]["orient"] = _tk.VERTICAL
         sc["widget"]["command"] = self["widget"].yview
         self["widget"]["yscrollcommand"] = sc["widget"].set
         return self
@@ -3856,7 +3877,7 @@ class Listbox(Widget):
         Removes all items from Listbox.
         @return:
         """
-        self["widget"].delete(0, _tk_.END)
+        self["widget"].delete(0, _tk.END)
         return self
     def setSlotBgDefault(self, color:Union[Color, str]=Color.WHITE):
         """
@@ -4007,8 +4028,8 @@ class Scale(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            doubbleVar = _tk_.DoubleVar(_master._get())
-            self._data = {"master":_master,  "widget":_tk_.Scale(_master._get()), "var":doubbleVar, "init":{"variable":doubbleVar, "from_":from_, "to":to, "orient":orient.value if hasattr(orient, "value") else orient}}
+            doubbleVar = _tk.DoubleVar(_master._get())
+            self._data = {"master":_master,  "widget":_tk.Scale(_master._get()), "var":doubbleVar, "init":{"variable":doubbleVar, "from_":from_, "to":to, "orient":orient.value if hasattr(orient, "value") else orient}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4114,7 +4135,7 @@ class Progressbar(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "widget":ttk.Progressbar(_master._get()), "values":values, "value":0}
+            self._data = {"master":_master,  "widget":_ttk.Progressbar(_master._get()), "values":values, "value":0}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4155,7 +4176,7 @@ class Progressbar(Widget):
             yield i
     def setOrient(self, o:Orient):
         """
-        Set the Processbar orientation using the Orient enum.
+        Set the Processbar orientation using the Orient _Enum.
         Vertical or Horizontal.
         @param o:
         @return:
@@ -4230,27 +4251,27 @@ class Progressbar(Widget):
         self._setAttribute("value", p)
         self["value"] = p / 100 * self["values"]
         return self
-class _ScrolledText(_tk_.Text):
+class _ScrolledText(_tk.Text):
     """
     Private implementation of tkinter.scrolledtext.ScrolledText
 
-    use ttk.Scrollbar
+    use _ttk.Scrollbar
 
     """
     def __init__(self, master=None, **kw):
-        self.frame = _tk_.Frame(master)
-        self.vbar = ttk.Scrollbar(self.frame)
-        self.vbar.pack(side=_tk_.RIGHT, fill=_tk_.Y)
+        self.frame = _tk.Frame(master)
+        self.vbar = _ttk.Scrollbar(self.frame)
+        self.vbar.pack(side=_tk.RIGHT, fill=_tk.Y)
 
         kw.update({'yscrollcommand': self.vbar.set})
-        _tk_.Text.__init__(self, self.frame, **kw)
-        self.pack(side=_tk_.LEFT, fill=_tk_.BOTH, expand=True)
+        _tk.Text.__init__(self, self.frame, **kw)
+        self.pack(side=_tk.LEFT, fill=_tk.BOTH, expand=True)
         self.vbar['command'] = self.yview
         # hack by https://github.com/enthought/Python-2.7.3/blob/master/Lib/lib-tk/ScrolledText.py
         # Copy geometry methods of self.frame without overriding Text
         # methods -- hack!
         text_meths = vars(Text).keys()
-        methods = vars(_tk_.Pack).keys() | vars(_tk_.Grid).keys() | vars(_tk_.Place).keys()
+        methods = vars(_tk.Pack).keys() | vars(_tk.Grid).keys() | vars(_tk.Place).keys()
         methods = methods.difference(text_meths)
 
         for m in methods:
@@ -4273,7 +4294,7 @@ class Text(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget": _ScrolledText(_master._get()) if scrollAble else _tk_.Text(_master._get()), "forceScroll":forceScroll, "tagCounter":0, "scrollable":scrollAble, "init":{"state":"disabled" if readOnly else "normal"}}
+            self._data = {"master": _master,  "widget": _ScrolledText(_master._get()) if scrollAble else _tk.Text(_master._get()), "forceScroll":forceScroll, "tagCounter":0, "scrollable":scrollAble, "init":{"state":"disabled" if readOnly else "normal"}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4360,7 +4381,7 @@ class Text(Widget):
                 _textSectionLastLength = len(textSection.split("\n")[-1]) - 1  # section nur 1 zeile (dann farbe entfernen)
             secondMarker = str(line) + "." + str(firstMarkerChar + _textSectionLastLength)
             if textSection[0] in colors.keys():  # check if tag is a valid color
-                _id = "".join([choice(ascii_lowercase) for _ in range(30)])
+                _id = "".join([_choice(ascii_lowercase) for _ in range(30)])
                 self["widget"].tag_add(_id, firstMarker, secondMarker)
                 self["widget"].tag_config(_id, foreground=colors[textSection[0]].value)
             else:
@@ -4428,7 +4449,7 @@ class Text(Widget):
         if self["widgetProperties"]["state"] == "disabled":
             self.setEnabled()
             disableAfterWrite = True
-        self["widget"].delete(0.0, _tk_.END)
+        self["widget"].delete(0.0, _tk.END)
         for i in self["widget"].tag_names():
             self["widget"].tag_delete(i)
         self["tagCounter"] = 0
@@ -4443,7 +4464,7 @@ class Text(Widget):
         """
         try:
             return self["widget"].get("sel.first", "sel.last")
-        except _tk_.TclError:
+        except _tk.TclError:
             return None
     def onUserInputEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
@@ -4511,7 +4532,7 @@ class Text(Widget):
         return self
     def setWrapping(self, w:Wrap):
         """
-        Set text wrapping using 'Wrap' enum.
+        Set text wrapping using 'Wrap' _Enum.
         Default: NONE
         @param w:
         @return:
@@ -4582,7 +4603,7 @@ class TreeView(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget":ttk.Treeview(_master._get()), "headers":[], "elements":[], "onHeaderClick":None, "use_index":False}
+            self._data = {"master": _master,  "widget":_ttk.Treeview(_master._get()), "headers":[], "elements":[], "onHeaderClick":None, "use_index":False}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4599,7 +4620,7 @@ class TreeView(Widget):
         _EventHandler._registerNewEvent(widget, func, EventType.KEY_UP + EventType.ARROW_DOWN, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self.__decryptEvent)
     def attachVerticalScrollBar(self, sc: ScrollBar):
         self["yScrollbar"] = sc
-        sc["widget"]["orient"] = _tk_.VERTICAL
+        sc["widget"]["orient"] = _tk.VERTICAL
         sc["widget"]["command"] = self["widget"].yview
         self["widget"]["yscrollcommand"] = sc["widget"].set
         return self
@@ -4775,7 +4796,7 @@ class SpinBox(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame):
-            self._data = {"master": _master,  "widget": _tk_.Spinbox(_master._get()), "readonly":readOnly, "init":{"state":"readonly" if readOnly else "normal", "values":list(optionList)}}
+            self._data = {"master": _master,  "widget": _tk.Spinbox(_master._get()), "readonly":readOnly, "init":{"state":"readonly" if readOnly else "normal", "values":list(optionList)}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4834,9 +4855,9 @@ class DropdownMenu(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            stringVar = _tk_.StringVar()
-            self._data = {"master": _master,  "widget":ttk.Combobox(_master._get(), textvariable=stringVar), "values":optionList, "stringVar":stringVar, "readonly":readonly, "init":{"state":"readonly" if readonly else "normal", "values":list(optionList)}}
-            self.style= ttk.Style()
+            stringVar = _tk.StringVar()
+            self._data = {"master": _master,  "widget":_ttk.Combobox(_master._get(), textvariable=stringVar), "values":optionList, "stringVar":stringVar, "readonly":readonly, "init":{"state":"readonly" if readonly else "normal", "values":list(optionList)}}
+            self.style= _ttk.Style()
             #self.style.theme_use("clam")
 
         else:
@@ -4928,7 +4949,7 @@ class Separator(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget":ttk.Separator(_master._get())}
+            self._data = {"master": _master,  "widget":_ttk.Separator(_master._get())}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4941,7 +4962,7 @@ class TaskBar(Widget):
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             if _master["hasMenu"]: raise RuntimeError("You cannot apply two Menus to the Window!") #@TODO Runtime ???
             _master["hasMenu"] = True
-            self._data = {"master": _master,  "widget": _tk_.Menu(_master._get(), tearoff=False), "subMenu":[], "group":group}
+            self._data = {"master": _master,  "widget": _tk.Menu(_master._get(), tearoff=False), "subMenu":[], "group":group}
             _master._get().config(menu=self._data["widget"])
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
@@ -4961,7 +4982,7 @@ class TaskBar(Widget):
 class _SubMenu:
     _SUB_MENUS = []
     def __init__(self, master, menu, _data, name, group):
-        self._id = "".join([str(randint(0,9)) for _ in range(15)])
+        self._id = "".join([str(_randint(0,9)) for _ in range(15)])
         self._widgets = [] #[["command", <type: Button>], ["cascade", <type: Button>, <type: SubMenu>]]
         self._data = _data
         self._name = name
@@ -4969,7 +4990,7 @@ class _SubMenu:
         self._data["created"] = False
         self._master = master
         self._masterMenu = menu
-        self._menu = _tk_.Menu(menu, tearoff=False)
+        self._menu = _tk.Menu(menu, tearoff=False)
         if group is not None:
             # dummy widget for Group
             self._wid = Widget(None, {"master":self._master, "widget":self._menu}, group)
@@ -5019,7 +5040,7 @@ class ContextMenu(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif hasattr(_master, "_get"):
-            self._data = {"master": _master,  "widget": _tk_.Menu(_master._get(), tearoff=0), "subMenu":[], "closable":closable, "eventType":eventType, "group":group}
+            self._data = {"master": _master,  "widget": _tk.Menu(_master._get(), tearoff=0), "subMenu":[], "closable":closable, "eventType":eventType, "group":group}
             if eventType is not None: _EventHandler._registerNewEvent(_master, self.open, eventType, [], 1, decryptValueFunc=self._decryptEvent, defaultArgs=False, disableArgs=False)
             self._data["mainSubMenu"] = self._createSubMenu()
         else:
@@ -5075,7 +5096,7 @@ class NotebookTab(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": notebook, "widget": _tk_.Frame(notebook._get()), "tabWidget": notebook, "tabId": None, "name":name}
+            self._data = {"master": notebook, "widget": _tk.Frame(notebook._get()), "tabWidget": notebook, "tabId": None, "name":name}
             notebook._get().add(self._data["widget"], text=name)
             self._data["tabId"] = self.getNumberOfTabs()-1
         else:
@@ -5124,7 +5145,7 @@ class Notebook(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "widget":ttk.Notebook(_master._get()), "tabIndexList":[], "runnable":None, "group":group, "init":{"func":self._init, "style":"CustomNotebook" if closable else ""}}
+            self._data = {"master":_master,  "widget":_ttk.Notebook(_master._get()), "tabIndexList":[], "runnable":None, "group":group, "init":{"func":self._init, "style":"CustomNotebook" if closable else ""}}
             if closable:
                 self._get().bind("<ButtonPress-1>", self._on_close_press, True)
                 self._get().bind("<ButtonRelease-1>", self._on_close_release)
@@ -5154,13 +5175,13 @@ class Notebook(Widget):
     def _decryptEvent(self, args):
         return self.getSelectedTabIndex()
     def _initializeCustomStyle(self):
-        style = ttk.Style()
+        style = _ttk.Style()
         self.images = (
-            _tk_.PhotoImage("img_close",
+            _tk.PhotoImage("img_close",
                           data="R0lGODlhCAAIAMIBAAAAADs7O4+Pj9nZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs="),
-            _tk_.PhotoImage("img_closeactive",
+            _tk.PhotoImage("img_closeactive",
                           data="R0lGODlhCAAIAMIEAAAAAP/SAP/bNNnZ2cbGxsbGxsbGxsbGxiH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs="),
-            _tk_.PhotoImage("img_closepressed",
+            _tk.PhotoImage("img_closepressed",
                           data="R0lGODlhCAAIAMIEAAAAAOUqKv9mZtnZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=")
         )
 
@@ -5272,7 +5293,7 @@ class Canvas(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master, "widget": _tk_.Canvas(_master._get()), "canObjs":{}}
+            self._data = {"master": _master, "widget": _tk.Canvas(_master._get()), "canObjs":{}}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -5291,7 +5312,7 @@ class CanvasObject:
             self._data["loc2"] = None
             self._data["width"] = None
             self._data["height"] = None
-            self._data["id"] = "".join([str(randint(0,9)) for _ in range(15)])
+            self._data["id"] = "".join([str(_randint(0,9)) for _ in range(15)])
             self._data["master"]["canObjs"][self._ins["id"]] = self._ins
             self._data["registry"] = _EventRegistry(self)
     def __getitem__(self, item):
@@ -5596,15 +5617,15 @@ class FileDialog:
     def openFile(master=None, title=None, initialpath=None, types=None):
         if types is None:
             types = []
-        return FileDialog._dialog(fd.askopenfilename, master=master, title=title, initialpath=initialpath, types=types)
+        return FileDialog._dialog(_fd.askopenfilename, master=master, title=title, initialpath=initialpath, types=types)
     @staticmethod
     def openDirectory(master=None, title=None, initialpath=None):
-        return FileDialog._dialog(fd.askdirectory, master=master, title=title, initialpath=initialpath)
+        return FileDialog._dialog(_fd.askdirectory, master=master, title=title, initialpath=initialpath)
     @staticmethod
     def saveFile(master=None, title=None, initialpath=None, types:list=None):
         if types is None:
             types = []
-        return FileDialog._dialog(fd.asksaveasfilename, master=master, title=title, initialpath=initialpath, types=types)
+        return FileDialog._dialog(_fd.asksaveasfilename, master=master, title=title, initialpath=initialpath, types=types)
     @staticmethod
     def _dialog(func, master=None, title=None, initialpath=None, types=None):
         if types is None:
@@ -5621,7 +5642,7 @@ class FileDialog:
                     raise TKExceptions.InvalidFileExtention(str(i)+" is not a valid Extention! Use .<ext>!")
         _data = {"title":str(title),
                 "initialdir":initialpath}
-        if func != fd.askdirectory: _data["filetypes"] = _types
+        if func != _fd.askdirectory: _data["filetypes"] = _types
         if initialpath is not None and os.path.split(initialpath)[1]!="" and False:# Disabled
             _data["initialfile"] = os.path.split(initialpath)[1]
         if master is None:
@@ -5640,7 +5661,7 @@ class FileDialog:
 class SimpleDialog:
     @staticmethod
     def askYesNo(master, message="", title=""):
-        return SimpleDialog._dialog(msg.askyesno, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.askyesno, master, message=message, title=title)
     @staticmethod
     def askYesNoCancel(master, message="", title=""):
         """
@@ -5652,7 +5673,7 @@ class SimpleDialog:
         @param title:
         @return:
         """
-        return SimpleDialog._dialog(msg.askyesnocancel, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.askyesnocancel, master, message=message, title=title)
     @staticmethod
     def askOkayCancel(master, message="", title=""):
         """
@@ -5663,28 +5684,28 @@ class SimpleDialog:
         @param title:
         @return: True or False
         """
-        return SimpleDialog._dialog(msg.askokcancel, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.askokcancel, master, message=message, title=title)
     @staticmethod
     def askRetryCancel(master, message="", title=""):
-        return SimpleDialog._dialog(msg.askretrycancel, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.askretrycancel, master, message=message, title=title)
     @staticmethod
     def askInfo(master, message="", title=""):
-        return SimpleDialog._dialog(msg.showinfo, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.showinfo, master, message=message, title=title)
     @staticmethod
     def askError(master, message="", title=""):
-        return SimpleDialog._dialog(msg.showerror, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.showerror, master, message=message, title=title)
     @staticmethod
     def askWarning(master, message="", title=""):
-        return SimpleDialog._dialog(msg.showwarning, master, message=message, title=title)
+        return SimpleDialog._dialog(_msgb.showwarning, master, message=message, title=title)
     @staticmethod
     def askString(master, message="", title="", initialValue="", hideWith=None):
-        return SimpleDialog._dialog(simd.askstring, master, prompt=message, title=title, show=hideWith, initialvalue=initialValue)
+        return SimpleDialog._dialog(_simd.askstring, master, prompt=message, title=title, show=hideWith, initialvalue=initialValue)
     @staticmethod
     def askInteger(master, message="", title="", initialValue=""):
-        return SimpleDialog._dialog(simd.askinteger, master, prompt=message, title=title)
+        return SimpleDialog._dialog(_simd.askinteger, master, prompt=message, title=title)
     @staticmethod
     def askFloat(master, message="", title="", initialValue=""):
-        return SimpleDialog._dialog(simd.askfloat, master, prompt=message, title=title)
+        return SimpleDialog._dialog(_simd.askfloat, master, prompt=message, title=title)
     @staticmethod
     def askUsernamePassword(master, title="", initialUname="", initialPassw="", unameString="Username:", passwString="Password:", hidePassword=True, default=None, group=None):
         _return = None
@@ -5822,19 +5843,18 @@ class ColorChooser:
     def askColor(master=None, initialcolor=None, title=""):
         if isinstance(master, Tk):
             if initialcolor == "": initialcolor = None
-            return ColorChooser(colorChooser.askcolor(initialcolor=initialcolor.value if hasattr(initialcolor, "value") else initialcolor, parent=master._get(), title=str(title)))
+            return ColorChooser(_clc.askcolor(initialcolor=initialcolor.value if hasattr(initialcolor, "value") else initialcolor, parent=master._get(), title=str(title)))
         else:
             mas = Tk()
             mas.hide()
-            anw = ColorChooser(colorChooser.askcolor(initialcolor=initialcolor.value if hasattr(initialcolor, "value") else master, parent=mas._get(), title=title))
+            anw = ColorChooser(_clc.askcolor(initialcolor=initialcolor.value if hasattr(initialcolor, "value") else master, parent=mas._get(), title=title))
             mas.destroy()
             return anw
 
 class MenuPage(Frame):
-    def __init__(self, master, group=None, homeScreen=False):
+    def __init__(self, master, group=None):
         super().__init__(master, group)
         self._menuData = {
-            "home_screen":homeScreen,
             "history":[self],
             "master":self["tkMaster"],
             "active":False
@@ -5875,6 +5895,12 @@ class MenuPage(Frame):
         pass
     def onHide(self):
         pass
+    def openHomePage(self, mainPage):
+        assert isinstance(mainPage, MenuPage), "Please use 'MenuPage' instance!"
+        mainPage._menuData["history"] = [mainPage]
+        self.placeForget()
+        mainPage.openMenuPage()
+
 
 #redundant class names
 Combobox = DropdownMenu
