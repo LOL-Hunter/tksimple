@@ -1,4 +1,4 @@
-﻿import tkinter as _tk
+import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
 import tkinter.filedialog as _fd
@@ -301,6 +301,51 @@ class Cursor(_Enum):
     CUSTOM_STAR = "star"
     CUSTOM_TARGET = "target"
     CUSTOM_TRECK = "trek"
+
+class Font:
+    def __init__(self, size:int=10, family:FontType=FontType.ARIAL, weight:bool=False, italic:bool=False, underline:bool=False, overstrike:bool=False):
+        self._data = {
+            "size":size,
+            "family":(family.value if hasattr(family, "value") else family),
+            "weight":'bold' if weight else 'normal',
+            "slant":'italic' if italic else'roman',
+            "underline":underline,
+            "overstrike":overstrike
+        }
+        self._font = _font.Font()
+        self._state = False
+    def setSize(self, i:int):
+        self._data["size"] = int(i)
+        self._state = False
+        return self
+    def setFontType(self, family:Union[FontType, str]):
+        self._data["family"] = family.value if hasattr(family, "value") else family,
+        self._state = False
+        return self
+    def setWeight(self, w:bool=True):
+        self._data["weight"] = 'bold' if w else 'normal'
+        self._state = False
+        return self
+    def setItalic(self, w:bool=True):
+        self._data["slant"] = 'italic' if w else'roman'
+        self._state = False
+        return self
+    def setUnderline(self, w:bool=True):
+        self._data["underline"] = w
+        self._state = False
+        return self
+    def setOverstrike(self, w:bool=True):
+        self._data["overstrike"] = w
+        self._state = False
+        return self
+
+    def updateFont(self):
+        self._font.configure(**self._data)
+        self._state = True
+    def _get(self):
+        if not self._state:
+            self.updateFont()
+        return self._font
 
 class Key(_Enum):
     SHIFT = "<Shift>"
@@ -1767,7 +1812,6 @@ class Dialog(Toplevel):
         super().__init__(_master, group, topMost)
         self.hide()
         self._get().transient()
-        self._get().grab_set()
     def show(self):
         """
         Shows the dialog.
@@ -1853,11 +1897,11 @@ class Widget:
         """
         self._setAttribute("text", str(text))
         return self
-    def setFont(self, size:int=10, art=FontType.ARIAL, underline=False, bold=False, slant=False, overstrike=False):
+    def setFont(self, size:Union[int, Font]=10, art=FontType.ARIAL, underline=False, bold=False, italic=False, overstrike=False):
         """
         Use this method to configure the Font.
 
-        @param size: text size
+        @param size: text size or Font-instance
         @param art: font type
         @param underline: text is underlined
         @param bold: text is bold
@@ -1865,14 +1909,17 @@ class Widget:
         @param overstrike: text is overstrike
         @return:
         """
-        _data = {'family': art.value if hasattr(art, "value") else art,
-                'size': size,                            # size
-                'weight': 'bold' if slant else 'normal', # fett
-                'slant': 'italic' if bold else'roman',   # kusiv
-                'underline': bool(underline),            # unterstrichen
-                'overstrike': bool(overstrike)}          # durchgestrichen
+        if not isinstance(size, Font):
+            _data = {'family': art.value if hasattr(art, "value") else art,
+                    'size': size,                            # size
+                    'weight': 'bold' if bold else 'normal',   #fett
+                    'slant': 'italic' if italic else'roman',   # kusiv
+                    'underline': bool(underline),            # unterstrichen
+                    'overstrike': bool(overstrike)}          # durchgestrichen
 
-        self._setAttribute("font", _font.Font(**_data))
+            self._setAttribute("font", _font.Font(**_data))
+        else:
+            self._setAttribute("font", size._get())
         return self
     def setTextOrientation(self, ori:Anchor=Anchor.LEFT):
         """
@@ -3730,7 +3777,7 @@ class Listbox(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "widget":_tk.Listbox(_master._get()), "selectionMode":"single", "init":{"selectmode":"single"}, "default_color":Color.DEFAULT}
+            self._data = {"master":_master,  "widget":_tk.Listbox(_master._get()), "selection_mode":"single", "init":{"selectmode":"single"}, "default_color":Color.DEFAULT}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -3821,6 +3868,7 @@ class Listbox(Widget):
         @return:
         """
         self._setAttribute("selectmode", "multiple")
+        self["selection_mode"] = "multiple"
         return self
     def setSingleSelect(self):
         """
@@ -3830,8 +3878,9 @@ class Listbox(Widget):
         @return:
         """
         self._setAttribute("selectmode", "single")
+        self["selection_mode"] = "single"
         return self
-    def add(self, entry:str, index = "end", color:Union[Color, str]=None):
+    def add(self, entry:str, index="end", color:Union[Color, str]=None):
         """
         Adds an entry to the Listbox.
         For large amount of items the 'addAll' method is way faster!
@@ -3964,8 +4013,8 @@ class Listbox(Widget):
         If selectionmode is 'multiple' -> returns list / None
         @return:
         """
-        if self["selectionMode"] == "single":
-            if len(self["widget"].curselection()) == 0: return None
+        if len(self["widget"].curselection()) == 0: return None
+        if self["selection_mode"] == "single":
             return int(self["widget"].curselection()[0])
         else:
             return [int(i) for i in self["widget"].curselection()]
@@ -4298,7 +4347,7 @@ class Text(Widget):
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
-    def addLine(self, text:str, color:Union[Color, str]="black"):
+    def addLine(self, text:str, color:Union[Color, str]="black", font:Font=None):
         """
         Adds a Line of text to the Textbox widget.
         @param text:
@@ -4306,7 +4355,7 @@ class Text(Widget):
         @return:
         """
         if not text.endswith("\n"): text = text+"\n"
-        self.addText(text, color)
+        self.addText(text, color, font)
         return self
     def addLineWithTimeStamp(self, text:str, color:Union[Color, str]="black"):
         """
@@ -4328,7 +4377,6 @@ class Text(Widget):
         self.clear()
         self.addStrf(text)
         return self
-
     def addStrf(self, text:str):
         """
         Adds text to the Textbox.
@@ -4386,40 +4434,48 @@ class Text(Widget):
                 self["widget"].tag_config(_id, foreground=colors[textSection[0]].value)
             else:
                 print(f"'{textSection}' has no valid color tag.")
-            firstMarkerChar = int(secondMarker.split(".")[1])  # += len(textSection.split("\n")[-1])-1
+            firstMarkerChar = int(secondMarker.split(".")[1])
 
-
-    def setText(self, text:str):
+    def setText(self, text:str, color:Union[Color, str]="black", font:Font=None):
         """
         Overwrites the text with 'text'.
         @param text:
         @return:
         """
         self.clear()
-        self.addText(text)
+        self.addText(text, color, font)
         return self
-
-
-    def addText(self, text:str, color:Union[Color, str]="black"):
+    def addText(self, text:str, color:Union[Color, str]="black", font:Font=None):
         """
         Adds text to the Text box.
         Can be colored. Default: BLACK
         @param text:
         @param color:
+        @param font:
         @return:
         """
         color = color.value if hasattr(color, "value") else color
         disableAfterWrite=False
-        #if text.endswith("\n"):
-            #text = text[0:-1]
         self["tagCounter"]+=1
         if self["widgetProperties"]["state"] == "disabled":
             self.setEnabled()
             disableAfterWrite = True
-        self["widget"].insert("end", str(text)) # changed: removed /n
-        if color != "black":
-            self["widget"].tag_add(str(self["tagCounter"]), str(self["tagCounter"])+".0", "end")
-            self["widget"].tag_config(str(self["tagCounter"]), foreground=color)
+        content = self.getText()
+        self["widget"].insert("end", str(text))
+        if color != "black" or font is not None:
+            line = content.count("\n")
+            firstMarkerChar = len(content.split("\n")[-2])
+
+            contentAfter = self.getText()
+
+            secline = contentAfter.count("\n")
+            secMarkerChar = len(contentAfter.split("\n")[-2])
+
+            self["widget"].tag_add(str(self["tagCounter"]),
+                                   str(line) + "." + str(firstMarkerChar),
+                                   str(secline) + "." + str(secMarkerChar)
+                                   )
+            self["widget"].tag_config(str(self["tagCounter"]), foreground=color, font=None if font is None else font._get())
         if self["forceScroll"]:
             self["widget"].see("end")
         self["tagCounter"]+=text.count("\n")
@@ -4603,7 +4659,7 @@ class TreeView(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget":_ttk.Treeview(_master._get()), "headers":[], "elements":[], "onHeaderClick":None, "use_index":False}
+            self._data = {"master": _master,  "widget":_ttk.Treeview(_master._get()), "headers":[], "elements":[], "onHeaderClick":None, "use_index":False, "select_mode":"single"}
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4627,13 +4683,13 @@ class TreeView(Widget):
     def _decryptEvent(self, args):
         ids = self["widget"].selection()
         if len(ids) == 0: return None
-        #if id_ == "": return None
         items = []
         for id_ in ids:
             item = self["widget"].item(id_)
             a = {self["headers"][0]:item["text"]}
             for i, h in enumerate(self["headers"][1:]): a[h] = item["values"][i]
             items.append(a)
+        if self["select_mode"] == "single": return items[0]
         return items
     def __decryptEvent(self, args):
         self["tkMaster"].updateIdleTasks()
@@ -4654,7 +4710,7 @@ class TreeView(Widget):
         a = {self["headers"][0]:item["text"]}
         for i, h in enumerate(self["headers"][1:]): a[h] = item["values"][i]
         return a
-    def getSelectedItems(self)->list:
+    def getSelectedItem(self)->list | dict | None:
         return self._decryptEvent(None)
     def clear(self):
         if self.length() == 0: return self
@@ -4730,9 +4786,11 @@ class TreeView(Widget):
         return self
     def setMultipleSelect(self):
         self._setAttribute("selectmode", "extended")
+        self["select_mode"] = "multiple"
         return self
     def setSingleSelect(self):
         self._setAttribute("selectmode", "browse")
+        self["select_mode"] = "single"
         return self
     def clearSelection(self):
         for item in self["widget"].selection():
@@ -4776,9 +4834,9 @@ class TreeView(Widget):
         return self.getAllSlots().index(item)
     def getDataByIndex(self, index)->dict:
         return self._getDataFromId(self._getIds()[index])
-    def getSelectedIndex(self):
-        if self["widget"]["selectmode"] == "browse":
-            if len(self["widget"].curselection()) == 0: return -1
+    def getSelectedIndex(self)->int | None | list:
+        if len(self["widget"].selection()) == 0: return None
+        if self["select_mode"] == "single":
             return self._getIds().index(self["widget"].selection()[0])
         else:
             ids = self._getIds()
