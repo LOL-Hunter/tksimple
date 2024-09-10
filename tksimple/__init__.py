@@ -1,3 +1,4 @@
+﻿import sys
 import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
@@ -888,23 +889,25 @@ class _EventHandler:
     def __call__(self, *args):
         #print("Args:", type(args[0]))
         if self.event is None: return
-        def raiseError():
+        def raiseError(err):
             info = f"""
-# Could not call bound function!
-# BindTo:    '{"" if not hasattr(event["func"], "__self__") else event["func"].__self__.__class__.__name__ + "."}{event["func"] if not hasattr(event["func"], "__name__") else event["func"].__name__}'
-# Widget:    '{type(event["widget"]).__name__}'
-# EventType: {event["eventType"]}
-# priority:  {event["priority"]}
-# args:      {event["args"]}
-# value:     {event["value"]}"""
+\tCould not execute bound event method!
+\t\tBoundTo:   '{"" if not hasattr(event["func"], "__self__") else event["func"].__self__.__class__.__name__ + "."}{event["func"] if not hasattr(event["func"], "__name__") else event["func"].__name__}' 
+\t\tWidget:    '{type(event["widget"]).__name__}'
+\t\tEventType: '{event["eventType"]}'
+\t\tpriority:  {event["priority"]}
+\t\targs:      {event["args"]}
+\t\tvalue:     {event["value"]}"""
             _max = max([len(i) for i in info.splitlines()])
+            if _max < 111: _max = 111
             _info = ""
-            for i in info.splitlines():
-                _info += i + " "*(_max-len(i)+1) + "#" + "\n"
-            info = _info
-            info = "\n" + "#" *(_max+2) + info + "#" *(_max+2)
+            for j, i in enumerate(info.splitlines()):
+                _info += (i+ "\n")
+            if type(err) == KeyError:
+                print(_info)
+            else:
+                err.args = (_info+err.args[0],)
 
-            raise TKExceptions.EventExecutorException(info)
         args = args[0] if len(args) == 1 else list(args)
         event = None
         out = None
@@ -924,10 +927,14 @@ class _EventHandler:
             # call event
             if ((not hasattr(func, "__code__")) or ("self" in func.__code__.co_varnames and func.__code__.co_argcount > 1) or ("self" not in func.__code__.co_varnames and func.__code__.co_argcount > 0)) and not event["disableArgs"]:
                 try: out = func(args)
-                except: raiseError()
+                except Exception as e:
+                    raiseError(e)
+                    raise
             else:
                 try: out = func()
-                except: raiseError()
+                except Exception as e:
+                    raiseError(e)
+                    raise
             if not len(event._data): return False # destroyed
             if event["afterTriggered"] is not None: event["afterTriggered"](event, out)
         # After all events are processed
