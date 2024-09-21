@@ -18,4 +18,4 @@ Note: This library is still WIP and not registered in pip yet.
 * run ``pip install -r requirements.txt`` to install required packages. (not necessarily required)
 
 ### Reference
-For further reference click [here](https://github.com/LOL-Hunter/tksimple-reference/blob/4ded8c23cc77ffb3cca4c507c218ba44620cadc1/README.md).
+For further reference click [here](https://github.com/LOL-Hunter/tksimple-reference).
