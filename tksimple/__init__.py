@@ -466,7 +466,13 @@ class EventType(_Enum):
     F3 = "<F3>"
     F4 = "<F4>"
     F5 = "<F5>"
-
+    F6 = "<F6>"
+    F7 = "<F7>"
+    F8 = "<F8>"
+    F9 = "<F9>"
+    F10 = "<F10>"
+    F11 = "<F11>"
+    F12 = "<F12>"
 
     #widget Events
     SIZE_CONFIUGURE = "<Configure>"
@@ -634,6 +640,12 @@ class PILImage:
         """
         import PIL.ImageTk as imgTk
         self._preRenderedImage = imgTk.PhotoImage(self._image)
+        return self
+    def rotate(self, ang:int, useOriginal=False):
+        if useOriginal:
+            self._image = self._original.rotate(ang)
+        else:
+            self._image = self._image.rotate(ang)
         return self
     def _get(self):
         if self._preRenderedImage is None:
@@ -906,7 +918,7 @@ class _EventHandler:
             if type(err) == KeyError:
                 print(_info)
             else:
-                err.args = (_info+err.args[0],)
+                err.args = (str(_info)+str(err.args[0]),)
 
         args = args[0] if len(args) == 1 else list(args)
         event = None
@@ -1457,7 +1469,7 @@ class Tk:
         """
         self["master"].resizable(b, b)
         return self
-    def setFullscreen(self, b:bool):
+    def setFullscreen(self, b:bool=True):
         """
         Sets the Window in Fullscreen mode.
 
@@ -2577,10 +2589,6 @@ class StyleBuilder:
         assert StyleBuilder._STYLE is not None, "There is no Style created yet!"
         StyleBuilder._STYLE.theme_use(id_)
 
-
-
-
-
 class _ToolTip(Widget):
     """
     Create a tooltip for a given widget.
@@ -3566,14 +3574,15 @@ class TextEntry(LabelFrame):
     Important: First set the Text and THEN place the widget.
     """
     def __init__(self, _master, group=None, text=""):
-        super().__init__(_master, group)
-
+        super().__init__(_master, None)
         if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             _data = {"value":"", "label":Label(self, group), "entry":Entry(self, group)}
             _data["label"].setText(text)
             self._addData(_data)
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
+        #if group is not None:
+        #    group.add(self._ins)
     def bind(self, func:callable, event: Union[EventType, Key, Mouse, str], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
         Binds a specific event to the Widget. Runs given function on trigger.
@@ -3621,14 +3630,14 @@ class TextEntry(LabelFrame):
         Used for further configuration.
         @return:
         """
-        return self["entry"]
+        return self._data["entry"]
     def getLabel(self)->Label:
         """
         Returns the sub Label.
         Used for further configuration.
         @return:
         """
-        return self["label"]
+        return self._data["label"]
     def clear(self):
         """
         Clears the Entry.
@@ -3669,6 +3678,7 @@ class TextEntry(LabelFrame):
             entryWidth = 100
         else:
             entryWidth = width - labelWidth
+        super().place(x, y, width, height)
         self._data["label"].place(0, 0, labelWidth, height-offset)
         self._data["entry"].place(labelWidth, 0, entryWidth-offset, height-offset)
         return self
@@ -3688,7 +3698,7 @@ class TextEntry(LabelFrame):
         self.getLabel().setBg(col)
         return self
     def _get(self):
-        return self["widget"]
+        return self._data["widget"]
 class TextDropdownMenu(Widget):
     """
     Widget:
