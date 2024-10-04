@@ -4966,6 +4966,11 @@ class DropdownMenu(Widget):
         if disableAfterWrite:
             self._setAttribute("state", "readonly")
         return self
+    def getSelectedIndex(self)-> int | None:
+        val = self["widget"].get()
+        if val in self._data["values"]:
+            return self._data["values"].index(val)
+        return None
     def clear(self):
         disableAfterWrite = False
         if self["readonly"]:
@@ -4990,13 +4995,13 @@ class DropdownMenu(Widget):
         return self
     def getValue(self):
         return self["widget"].get()
-    def setOptionList(self, l:Iterable):
-        self["values"] = list(l)
+    def setOptionList(self, it:List[str]):
+        self["values"] = it
         disableAfterWrite = False
         if self["readonly"]:
             disableAfterWrite = True
             self.setEnabled(True)
-        self._setAttribute("values", l)
+        self._setAttribute("values", it)
         if disableAfterWrite:
             self._setAttribute("state", "readonly")
         return self
