@@ -15,7 +15,7 @@ from string import ascii_lowercase
 from time import strftime, time, sleep
 from traceback import format_exc
 from typing import Union, Callable, Iterable, List
-
+from webbrowser import open as openURL
 #TODO parameter description in __init__
 #TODO parameter type in __init__
 #TODO event value in bind
@@ -4615,6 +4615,98 @@ class Text(Widget):
     def _decryptEvent(self, args):
         return self.getText()
 #continue!
+class HyperLinkLabel(Label):
+    """
+    Label for displaying URL.
+    CLickable to open URL.
+    """
+    def __init__(self, master, group=None, url=None):
+        super().__init__(master, group)
+        self._hook = None
+        self._hoverText = None
+        self._hoverFont = None
+        self._hoverColor = "black"
+        self._doOpenSite = True
+        self.bind(self._onEnter, EventType.ENTER)
+        self.bind(self._onLeave, EventType.LEAVE)
+        self.resetClickedColor()
+        self.setURL(url)
+        self.setFg(Color.hex("#0000EE"))
+    def setURL(self, url:str):
+        """
+        Set URL and update on Label.
+        @param url:
+        @return:
+        """
+        self._url = url
+        self.setText(url)
+        self.setFont(
+            Font(
+                underline=True
+            )
+        )
+        if self._hoverText is not None and self._hoverFont is not None:
+            self._applyHoverText()
+        return self
+    def setClickedColor(self):
+        """
+        Set Colorcode to #551A8B (purple).
+        @return:
+        """
+        self.setFg(Color.hex("#551A8B"))
+        return self
+    def resetClickedColor(self):
+        """
+        Set Colorcode to #0000EE (blue).
+        @return:
+        """
+        self.setFg(Color.hex("#0000EE"))
+        return self
+    def setHoverText(self, t:str, font=None, color="black"):
+        self._hoverText = t
+        self._hoverColor = color
+        self._hoverFont = Font() if font is None else font
+        self._applyHoverText()
+        return self
+    def setCommand(self, cmd:Callable, args:list=None, priority:int=0, disableArgs=False, defaultArgs=False, openWebPage=True):
+        """
+        Bind on click event to this widget. Runs given function on trigger.
+
+        @param cmd: function get called on trigger
+        @param args: Additional arguments as List.
+        @param priority: If several equal events are bound, it's possible to set priorities.
+        @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
+        @param disableArgs: if True no args gets passed.
+        @return:
+        """
+        if cmd is None: return self
+        self._hook = cmd
+        self._doOpenSite = openWebPage
+        _EventHandler._registerNewEvent(self, func=self._openWebsite, eventType=EventType.LEFT_CLICK, priority=priority, args=args, disableArgs=disableArgs, defaultArgs=defaultArgs)
+        return self
+    def _openWebsite(self, e):
+        if self._hook is not None:
+            self._hook(e)
+        if e["setCanceled"]: return
+        self.setClickedColor()
+        if self._doOpenSite and self._url is not None:
+            openURL(self._url)
+    def _onEnter(self):
+        if self._hoverText is not None and self._hoverFont is not None:
+            self.setText(self._url)
+            self.setFont(
+                Font(
+                    underline=True
+                )
+            )
+            self.resetClickedColor()
+    def _onLeave(self):
+        if self._hoverText is not None and self._hoverFont is not None:
+            self._applyHoverText()
+    def _applyHoverText(self):
+        self.setText(self._hoverText)
+        self.setFont(self._hoverFont)
+        self.setFg(self._hoverColor)
 class _SubFolder:
     def __init__(self, parent, _data):
         self._parent = parent
