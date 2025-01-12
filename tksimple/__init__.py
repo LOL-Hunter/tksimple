@@ -899,7 +899,6 @@ class _EventHandler:
     def __setitem__(self, key, value):
         self.event[key] = value
     def __call__(self, *args):
-        #print("Args:", type(args[0]))
         if self.event is None: return
         def raiseError(err):
             info = f"""
@@ -929,6 +928,8 @@ class _EventHandler:
             event["tkArgs"] = args
             if event["decryptValueFunc"] is not None:
                 event["value"] = event["decryptValueFunc"](args) #TODO event in 'decryptValueFunc'
+                #if event["eventType"] == "<<ListboxSelect>>":
+                #    print(event._data)
                 if event["value"] == "CANCEL":
                     return
             if not event["defaultArgs"]:
@@ -4076,11 +4077,11 @@ class Listbox(Widget):
     def _decryptEvent(self, args):
         try:
             w = args.widget
-            if self["selectionMode"] == "single":
+            if self["selection_mode"] == "single":
                 return w.get(int(w.curselection()[0]))
             else:
                 return [w.get(int(i)) for i in w.curselection()]
-        except:
+        except Exception as e:
             return "CANCEL"
 class Scale(Widget):
     """
