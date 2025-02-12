@@ -927,7 +927,7 @@ class _EventHandler:
             func = event["func"]
             event["tkArgs"] = args
             if event["decryptValueFunc"] is not None:
-                event["value"] = event["decryptValueFunc"](args) #TODO event in 'decryptValueFunc'
+                event["value"] = event["decryptValueFunc"](args, event) #TODO event in 'decryptValueFunc'
                 #if event["eventType"] == "<<ListboxSelect>>":
                 #    print(event._data)
                 if event["value"] == "CANCEL":
@@ -1715,7 +1715,7 @@ class Tk:
             return _size
     def _decryptNonFilteredWindowResize(self, args):
         return self.getWindowSize()
-    def _privateDecryptWindowResize(self, args):
+    def _privateDecryptWindowResize(self, args, event):
         _size = self.getWindowSize()
         if self["privateOldWinSize"] == _size:
             return "CANCEL"
@@ -1795,7 +1795,7 @@ class Toplevel(Tk):
     """
     Toplevel window.
     Pass 'Tk' for _master to Use 'Toplevel' as 'Tk-class'.
-    This is useful if your application can run standalone (Tk) and can be imported to run as a Toplevel window above another application.
+    This allows to use Toplevel as standalone and as Toplevel window above another application.
     """
     def __init__(self, _master, group=None, topMost=True):
         if isinstance(_master, Tk):
@@ -2392,7 +2392,7 @@ class Widget:
         @return:
         """
         return self["id"]
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         pass
     def _id(self):
         return self["id"]
@@ -2758,7 +2758,7 @@ class Calendar(Widget):
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self["widget"].get_date()
     def setDate(self, d, m, y):
         """
@@ -2837,7 +2837,7 @@ class DropdownCalendar(Widget):
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self["widget"].get_date()
     def setDate(self, d, m, y):
         """
@@ -2897,9 +2897,7 @@ class DropdownCalendar(Widget):
         @param disableArgs: if True no args gets passed.
         @return:
         """
-        _EventHandler._registerNewEvent(self, func, EventType.customEvent("<<CalendarSelected>>"), args, priority,
-                                        decryptValueFunc=self._decryptEvent, defaultArgs=defaultArgs,
-                                        disableArgs=disableArgs)
+        _EventHandler._registerNewEvent(self, func, EventType.customEvent("<<CalendarSelected>>"), args, priority, decryptValueFunc=self._decryptEvent, defaultArgs=defaultArgs, disableArgs=disableArgs)
 class ScrollBar(Widget):
     """
     Scrollbar Widget can be attached to some Widget using their 'attachScrollbar' method.
@@ -2944,7 +2942,7 @@ class ScrollBar(Widget):
         self["widget"]["width"] = w
         self["thickness"] = w-10
         return self
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return None
 class Frame(Widget):
     """
@@ -3069,7 +3067,7 @@ class Checkbutton(Widget):
         super().__init__(self, self._data, group)
     def __bool__(self):
         return bool(self.getState())
-    def _decryptEvent(self, e):
+    def _decryptEvent(self, args, event):
         return self.getState()
     def onSelectEvent(self, func, args:list = None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
@@ -3228,7 +3226,7 @@ class _RadioButton(Widget):
         """
         self["widget"].flash()
         return self
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self.getText()
 class Button(Widget):
     """
@@ -3557,7 +3555,7 @@ class Entry(Widget):
         @return:
         """
         return self["widget"].get()
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return args
     def _scrollHandler(self, *l):
         op, howMany = l[0], l[1]
@@ -4074,7 +4072,7 @@ class Listbox(Widget):
         @return:
         """
         _EventHandler._registerNewEvent(self, func, EventType.LISTBOX_SELECT, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         try:
             w = args.widget
             if self["selection_mode"] == "single":
@@ -4613,7 +4611,7 @@ class Text(Widget):
         """
         self._setAttribute("wrap", w.value if hasattr(w, "value") else w)
         return self
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self.getText()
 #continue!
 class HyperLinkLabel(Label):
@@ -4773,39 +4771,49 @@ class TreeView(Widget):
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
-    def onDoubleSelectEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
-        _EventHandler._registerNewEvent(self, func, Mouse.DOUBBLE_LEFT, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
-    def onSingleSelectEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
-        _EventHandler._registerNewEvent(self, func, Mouse.LEFT_CLICK_RELEASE, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self.__decryptEvent)
-    def onArrowKeySelectEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False, bindToOtherWidget=None):
+    def onDoubleSelectEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False, useIndex=False):
+        event = _EventHandler._registerNewEvent(self, func, Mouse.DOUBBLE_LEFT, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
+        event["use_index"] = useIndex
+        return self
+    def onSingleSelectEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False, useIndex=False):
+        event = _EventHandler._registerNewEvent(self, func, Mouse.LEFT_CLICK_RELEASE, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
+        event["use_index"] = useIndex
+        return self
+    def onArrowKeySelectEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False, bindToOtherWidget=None, useIndex=False):
         widget = self
         if bindToOtherWidget is not None:
             widget = bindToOtherWidget
-
-        _EventHandler._registerNewEvent(widget, func, EventType.KEY_UP + EventType.ARROW_UP, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self.__decryptEvent)
-        _EventHandler._registerNewEvent(widget, func, EventType.KEY_UP + EventType.ARROW_DOWN, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self.__decryptEvent)
+        event1 = _EventHandler._registerNewEvent(widget, func, EventType.KEY_UP + EventType.ARROW_UP, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
+        event1["use_index"] = useIndex
+        event2 = _EventHandler._registerNewEvent(widget, func, EventType.KEY_UP + EventType.ARROW_DOWN, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
+        event2["use_index"] = useIndex
+        return self
     def attachVerticalScrollBar(self, sc: ScrollBar):
         self["yScrollbar"] = sc
         sc["widget"]["orient"] = _tk.VERTICAL
         sc["widget"]["command"] = self["widget"].yview
         self["widget"]["yscrollcommand"] = sc["widget"].set
         return self
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
+        self["tkMaster"].updateIdleTasks()
         ids = self["widget"].selection()
-        if len(ids) == 0: return None
+        if not len(ids): return None
         items = []
         for id_ in ids:
             item = self["widget"].item(id_)
+            if event["use_index"]:
+                items.append(
+                    self._getIds().index(id_)
+                )
+                continue
             a = {self["headers"][0]:item["text"]}
             for i, h in enumerate(self["headers"][1:]): a[h] = item["values"][i]
             items.append(a)
         if self["select_mode"] == "single": return items[0]
         return items
-    def __decryptEvent(self, args):
+    def _____decryptEvent(self, args):
         self["tkMaster"].updateIdleTasks()
-
         ids = self["widget"].selection()
-
         if len(ids) == 0: return None
         #if id_ == "": return None
         items = []
@@ -4821,7 +4829,7 @@ class TreeView(Widget):
         for i, h in enumerate(self["headers"][1:]): a[h] = item["values"][i]
         return a
     def getSelectedItem(self)->list | dict | None:
-        return self._decryptEvent(None)
+        return self._decryptEvent(None, None)
     def clear(self):
         if self.length() == 0: return self
         self["widget"].delete(*self["widget"].get_children())
@@ -5014,7 +5022,7 @@ class SpinBox(Widget):
         self._setAttribute("insertofftime",  int(d * 1000))
         self._setAttribute("insertontime", int(d * 1000))
         return self
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self.getValue()
 class DropdownMenu(Widget):
     def __init__(self, _master, group=None, optionList:list=[], readonly=True):
@@ -5111,9 +5119,9 @@ class DropdownMenu(Widget):
         if disableAfterWrite:
             self._setAttribute("state", "readonly")
         return self
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self["widget"].get()
-    def _decryptEvent2(self, args):
+    def _decryptEvent2(self, args, event):
         return args
 class Separator(Widget):
     def __init__(self, _master, group=None):
@@ -5249,7 +5257,7 @@ class ContextMenu(Widget):
             if not self["closable"]:#fuer Fabi :^)
                 self["widget"].grab_release()
         return self
-    def _decryptEvent(self, e):
+    def _decryptEvent(self, e, event):
         if isinstance(e, Event):
             e = e.getTkArgs()
         # why -> Error
@@ -5345,7 +5353,7 @@ class Notebook(Widget):
         if group is not None: group.add(nbt)
         self._addChildWidgets(nbt)
         return nbt
-    def _decryptEvent(self, args):
+    def _decryptEvent(self, args, event):
         return self.getSelectedTabIndex()
     def _initializeCustomStyle(self):
         style = _ttk.Style()
