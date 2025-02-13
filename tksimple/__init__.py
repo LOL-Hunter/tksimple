@@ -4801,7 +4801,7 @@ class TreeView(Widget):
         items = []
         for id_ in ids:
             item = self["widget"].item(id_)
-            if "use_index" in event._data.keys() and event["use_index"]:
+            if event is not None and event["use_index"]:
                 items.append(
                     self._getIds().index(id_)
                 )
