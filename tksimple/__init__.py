@@ -1,5 +1,4 @@
-﻿import sys
-import tkinter as _tk
+﻿import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
 import tkinter.filedialog as _fd
@@ -7,15 +6,15 @@ import tkinter.font as _font
 import tkinter.messagebox as _msgb
 import tkinter.simpledialog as _simd
 import tkinter.ttk as _ttk
-import os
 from datetime import date as _date
 from enum import Enum as _Enum
 from random import randint as _randint, choice as _choice
 from string import ascii_lowercase
 from time import strftime, time, sleep
 from traceback import format_exc
-from typing import Union, Callable, Iterable, List
+from typing import Union, Callable, List
 from webbrowser import open as openURL
+import os
 #TODO parameter description in __init__
 #TODO parameter type in __init__
 #TODO event value in bind
@@ -1153,12 +1152,10 @@ class Tk:
     """
     def __init__(self, _master=None, group=None):
         self.setAllwaysOnTop = self.setTopmost
-        self.title = self.setTitle
         self.quit = self.quitMainLoop
         self.withdraw = self.hide
-        self.setBackgroundColor = self.setBg
         if _master is None:
-            self._data = {"master": _tk.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "setSize":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":""}
+            self._data = {"master": _tk.Tk(), "registry":_EventRegistry(self), "placeRelData":{"handler":None}, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "set_size":(),  "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "closeRunnable":None, "title":"", "last_size_conf_time":None}
             #configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, dict):
@@ -1175,9 +1172,7 @@ class Tk:
         except KeyError as e: raise KeyError("Item '"+str(item)+"' is not in dict of class '"+self["master"].__class__.__name__+"'")
     def __setitem__(self, key, value):
         self._data[key] = value
-    def __del__(self):
-        pass
-        #print("__DELETE__", type(self))
+    # Task Scheduler
     def runTask(self, func)->_TaskScheduler:
         task = _TaskScheduler(self, 0, func)
         return task
@@ -1193,93 +1188,26 @@ class Tk:
     def runDynamicDelayLoop(self, delay, func)->_TaskScheduler:
         task = _TaskScheduler(self, delay, func, repete=True, dynamic=True)
         return task
-    def getWindowActive(self)->bool:
-        return self["isRunning"]
-    def throwErrorSound(self):
-        self["master"].bell()
+    # Custom Events
     def onWindowResize(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False, filterEvent=True):
         _EventHandler._registerNewEvent(self, func, EventType.key("<Configure>"), args, priority, decryptValueFunc=(self._decryptWindowResize if filterEvent else self._decryptNonFilteredWindowResize), defaultArgs=defaultArgs, disableArgs=disableArgs)
-    def copyToClip(self, s):
-        self["master"].clipboard_append(str(s))
-        return self
-    def clearClip(self):
-        self["master"].clipboard_clear()
-        return self
-    def getClip(self):
-        return self["master"].clipboard_get()
-    def setFocus(self):
+    def onCloseEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
-        Sets the focus to this Window.
+        This Event is triggered if the user close the window or press Alt+F4.
 
-        @return:
-        """
-        self["master"].focus_set()
-        return self
-    def forceFocus(self):
-        """
-        Forces the focus to this WIndow.
-        @return:
-        """
-        self["master"].focus_force()
-        return self
-    def hide(self):
-        """
-        Minimizees the Window.
-        @return:
-        """
-        self["master"].withdraw()
-    def show(self):
-        """
-        Maximizes the Window.
-        @return:
-        """
-        self["master"].deiconify()
-    def setIcon(self, icon:Union[TkImage, PILImage]):
-        """
-        Sets the icon in the top left corner from the Window.
 
-        @param icon:
+        @param func:
+        @param args:
+        @param priority:
+        @param defaultArgs:
+        @param disableArgs:
         @return:
         """
-        self["master"].iconphoto(True, icon._get())
-        return self
-    def sleep(self, s):
-        """
-        Sleeps s seconds and updates the window in Background.
-        @param s:
-        @return:
-        """
-        temp = time()
-        while True:
-            if not self["destroyed"]: self.update()
-            if time()-temp >= s:
-                break
-        return self
-    def lift(self):
-        """
-        Lifts the Window on top of all other Windows.
-        @return:
-        """
-        self["master"].lift()
-        return self
-    def closeViaESC(self):
-        """
-        Destroys the window via pressing ESC-key.
-        Only if the setCanceled in the 'onCloseEvent' is False!
-        @return:
-        """
-        assert self["closeRunnable"] is not None, "Bind 'onCloseEvent' Event first!"
-        self.bind(self["closeRunnable"], EventType.ESC)
-        return self
-    def destroyViaESC(self):
-        """
-        Destroys the window via pressing ESC-key.
-        @return:
-        """
-        self.bind(self.destroy, EventType.ESC)
-        return self
-    #def bindToWidgetType(self, func, eventType:Union[EventType, Key, Mouse], event, args:list=None, defaultArgs=False, disableArgs=False):
-        #_EventHandler.registerNewEvent(self, func, event.__name__, args, defaultArgs=defaultArgs, disableArgs=disableArgs, bindFunc="bind_class")
+        def after(e, out):
+            if not e["setCanceled"]:
+                self.destroy()
+        self["closeRunnable"] = _EventHandler._getNewEventRunnable(self, func, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
+        return self["closeRunnable"]
     def bind(self, func:Callable, event:Union[EventType, Key, Mouse, str], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
         Binds a specific event to the Window. Runs given function on trigger.
@@ -1299,16 +1227,15 @@ class Tk:
             _EventHandler._registerNewCustomEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
         else:
             _EventHandler._registerNewEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
-    #def bindAll(self, func, event: Union[EventType, Key, Mouse], args: list=None, priority:int=0, defaultArgs=False, disableArgs=False):
-        #EventHandler._registerNewEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, bindFunc="bind_all")
-    def unbindEvent(self, event:Union[EventType, Key, Mouse]):
+    # Event Tweaks
+    def unbindEvent(self, event: Union[EventType, Key, Mouse]):
         """
         Unbinds all Events from given EventType.
 
         @param event:
         @return:
         """
-        #self["registry"].unregisterType(event)
+        # self["registry"].unregisterType(event)
         raise NotImplemented()
     def unbindAllEvents(self):
         """
@@ -1316,25 +1243,9 @@ class Tk:
 
         @return:
         """
-        #self["registry"].unregisterAll()
+        # self["registry"].unregisterAll()
         raise NotImplemented()
-    def getMousePosition(self):
-        """
-        Returns the current mouse position on the TK window.
-        @return:
-        """
-        return Location2D(self["master"].winfo_pointerx() - self["master"].winfo_rootx(), self["master"].winfo_pointery() - self["master"].winfo_rooty())
-    def getWidgetFromTk(self, w):
-        for widg in self._getAllChildWidgets(self):
-            pass
-        raise NotImplemented()
-    def getWidgetFromLocation(self, loc:Location2D):
-        #for widget in self._getAllChildWidgets(self):
-        #    if widget._get()
-        #print(*loc.get())
-        #widget = self["master"].winfo_containing(*loc.get())
-        #return widget
-        raise NotImplemented()
+    # Cursor
     def setCursor(self, c:Union[Cursor, str]):
         """
         Set cursor image from Cursor _Enum or default tkinter string.
@@ -1354,32 +1265,66 @@ class Tk:
         """
         self["master"]["cursor"] = "none"
         return
-    def clearAllWidgets(self):
+    # Quit & Close
+    def closeViaESC(self):
         """
-        Destroys all Widgets in the Window.
+        Destroys the window via pressing ESC-key.
+        Only if the setCanceled in the 'onCloseEvent' is False!
+        @return:
+        """
+        assert self["closeRunnable"] is not None, "Bind 'onCloseEvent' Event first!"
+        self.bind(self["closeRunnable"], EventType.ESC)
+        return self
+    def destroyViaESC(self):
+        """
+        Destroys the window via pressing ESC-key.
+        @return:
+        """
+        self.bind(self.destroy, EventType.ESC)
+        return self
+    def close(self):
+        """
+        Closes the window only if it was not prevented in the 'windowCloseEvent' with the setCanceled.
 
         @return:
         """
-        #for i in self["master"].winfo_children():
-        #    i.destroy()
-        raise NotImplemented()
-    def centerWindowOnScreen(self, forceSetSize=False):
+        if self["closeRunnable"] is None:
+            self.destroy()
+        else:
+            self["closeRunnable"]()
+    def quitMainLoop(self):
         """
-        Centers the Window on screen
+        Quit the Window. BUT the Window mainloop is still running.
 
-        @param forceSetSize: get the Parameters from 'setWindowSize' function and not from tkinter
         @return:
         """
-        width, height = self.getWindowSize()
-        if width == 1 or forceSetSize:
-            if len(self["setSize"]) == 2:
-                width, height = self["setSize"]
-            else:
-                raise TKExceptions.InvalidUsageException("Run the mainloop first or specify a window size manually to center the Window!")
-        swidth , sheight = self.getScreenSize()
-        nwidth = int(round((swidth/2-width/2), 0))
-        nheight = int(round((sheight/2-height/2), 0))
-        self.setPositionOnScreen(nwidth, nheight)
+        self["master"].quit()
+    # Appearance
+    def forceFocus(self):
+        """
+        Forces the focus to this WIndow.
+        @return:
+        """
+        self["master"].focus_force()
+        return self
+    def hide(self):
+        """
+        Minimizees the Window.
+        @return:
+        """
+        self["master"].withdraw()
+    def show(self):
+        """
+        Maximizes the Window.
+        @return:
+        """
+        self["master"].deiconify()
+    def lift(self):
+        """
+        Lifts the Window on top of all other Windows.
+        @return:
+        """
+        self["master"].lift()
         return self
     def destroy(self):
         """
@@ -1402,6 +1347,29 @@ class Tk:
                 print("FAIL!", e)
                 print(format_exc())
             return False
+    def disable(self, b=True):
+        self["master"].wm_attributes("-disabled", b)
+    def overrideredirect(self, b=True):
+        self["master"].overrideredirect(b)
+    def centerWindowOnScreen(self, forceSetSize=False):
+        """
+        Centers the Window on screen
+
+        @param forceSetSize: get the Parameters from 'setWindowSize' function and not from tkinter
+        @return:
+        """
+        width, height = self.getWindowSize()
+        if width == 1 or forceSetSize:
+            if len(self["set_size"]) == 2:
+                width, height = self["set_size"]
+            else:
+                raise TKExceptions.InvalidUsageException("Run the mainloop first or specify a window size manually to center the Window!")
+        swidth , sheight = self.getScreenSize()
+        nwidth = int(round((swidth/2-width/2), 0))
+        nheight = int(round((sheight/2-height/2), 0))
+        self.setPositionOnScreen(nwidth, nheight)
+        return self
+    # Update
     def update(self):
         """
         Updates the Window.
@@ -1416,43 +1384,33 @@ class Tk:
         @return:
         """
         self["master"].update_idletasks()
-    def activeWidgets(self): #@TODO: FIX!
-        #for i in self["master"].winfo_children():
-        #    yield i
-        raise NotImplemented()
-    def setCloseable(self, b:bool):
+    # Setter
+    def setFocus(self):
         """
-        If b is True -> Window cannot be closed
-        If b is False -> Window can normally close
+        Sets the focus to this Window.
 
-        @param b:
         @return:
         """
-        self["master"].protocol("WM_DELETE_WINDOW", b)
-    def setTitle(self, title):
-        """
-        Sets the Window title.
-
-        @param title:
-        @return:
-        """
-        self["title"] = title
-        self["master"].title(title)
+        self["master"].focus_set()
         return self
-    def setTransparent(self, color:Union[Color, str]):
+    def setIcon(self, icon:Union[TkImage, PILImage]):
         """
-        Defines given color as Transparent.
+        Sets the icon in the top left corner from the Window.
 
-        @param color:
+        @param icon:
         @return:
         """
-        color = color.value if hasattr(color, "value") else color
-        self["master"].wm_attributes("-transparentcolor", color)
+        self["master"].iconphoto(True, icon._get())
         return self
-    def disable(self, b=True):
-        self["master"].wm_attributes("-disabled", b)
-    def overrideredirect(self, b=True):
-        self["master"].overrideredirect(b)
+    def setBg(self, col:Union[Color, str]):
+        """
+        Set the Background Color of the Window.
+
+        @param col: Use Color _Enum, tkinter string or hex-code.
+        @return:
+        """
+        self["master"]["bg"] = col.value if hasattr(col, "value") else col
+        return self
     def setTopmost(self, b=True):
         """
         Sets the "Always on top" attribute.
@@ -1494,42 +1452,83 @@ class Tk:
         if str(x).find("-") == -1: x = "+" + str(x)
         if str(y).find("-") == -1: y = "+" + str(y)
         self["master"].geometry(str(x) + str(y))
-    def close(self):
+    def setCloseable(self, b:bool):
         """
-        Closes the window only if it was not prevented in the 'windowCloseEvent' with the setCanceled.
+        If b is True -> Window cannot be closed
+        If b is False -> Window can normally close
 
+        @param b:
         @return:
         """
-        if self["closeRunnable"] is None:
-            self.destroy()
-        else:
-            self["closeRunnable"]()
-    def onCloseEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
+        self["master"].protocol("WM_DELETE_WINDOW", b)
+    def setTitle(self, title):
         """
-        This Event is triggered if the user close the window or press Alt+F4.
+        Sets the Window title.
 
-
-        @param func:
-        @param args:
-        @param priority:
-        @param defaultArgs:
-        @param disableArgs:
+        @param title:
         @return:
         """
-        def after(e, out):
-            if not e["setCanceled"]:
-                self.destroy()
-        self["closeRunnable"] = _EventHandler._getNewEventRunnable(self, func, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
-        return self["closeRunnable"]
-    def setBg(self, col:Union[Color, str]):
-        """
-        Set the Background Color of the Window.
-
-        @param col: Use Color _Enum, tkinter string or hex-code.
-        @return:
-        """
-        self["master"]["bg"] = col.value if hasattr(col, "value") else col
+        self["title"] = title
+        self["master"].title(title)
         return self
+    def setTransparent(self, color:Union[Color, str]):
+        """
+        Defines given color as Transparent.
+
+        @param color:
+        @return:
+        """
+        color = color.value if hasattr(color, "value") else color
+        self["master"].wm_attributes("-transparentcolor", color)
+        return self
+    def setWindowSize(self, x:int, y:int, minsize=False):
+        """
+        Set the Windowsize. Can also set the 'minsize'.
+
+        @param x:
+        @param y:
+        @param minsize:
+        @return:
+        """
+        self["set_size"] = (x, y)
+        if minsize: self.setMinSize(x, y)
+        self["master"].geometry(str(x) + "x" + str(y))
+    def setMaxSize(self, x, y):
+        """
+        Set the maximal Windowsize.
+
+        @param x:
+        @param y:
+        @return:
+        """
+        self["master"].maxsize(x, y)
+    def setMinSize(self, x, y):
+        """
+        Set the minimum Windowsize.
+
+        @param x:
+        @param y:
+        @return:
+        """
+        self["master"].minsize(x, y)
+    # Getter
+    def getMousePosition(self):
+        """
+        Returns the current mouse position on the TK window.
+        @return:
+        """
+        return Location2D(self["master"].winfo_pointerx() - self["master"].winfo_rootx(), self["master"].winfo_pointery() - self["master"].winfo_rooty())
+    def getWidgetFromTk(self, w):
+        for widg in self._getAllChildWidgets(self):
+            pass
+        raise NotImplemented()
+    def getWidgetFromLocation(self, loc:Location2D):
+        #for widget in self._getAllChildWidgets(self):
+        #    if widget._get()
+        #print(*loc.get())
+        #widget = self["master"].winfo_containing(*loc.get())
+        #return widget
+        raise NotImplemented()
     def getHeight(self):
         """
         Returns the Window height.
@@ -1558,43 +1557,21 @@ class Tk:
         @return:
         """
         return self["master"].winfo_width(), self["master"].winfo_height()
-    def setWindowSize(self, x:int, y:int, minsize=False):
+    # Fix
+    def clearAllWidgets(self):
         """
-        Set the Windowsize. Can also set the 'minsize'.
-
-        @param x:
-        @param y:
-        @param minsize:
-        @return:
-        """
-        self["setSize"] = (x, y)
-        if minsize: self.setMinSize(x, y)
-        self["master"].geometry(str(x) + "x" + str(y))
-    def setMaxSize(self, x, y):
-        """
-        Set the maximal Windowsize.
-
-        @param x:
-        @param y:
-        @return:
-        """
-        self["master"].maxsize(x, y)
-    def setMinSize(self, x, y):
-        """
-        Set the minimum Windowsize.
-
-        @param x:
-        @param y:
-        @return:
-        """
-        self["master"].minsize(x, y)
-    def quitMainLoop(self):
-        """
-        Quit the Window. BUT the Window mainloop is still running.
+        Destroys all Widgets in the Window.
 
         @return:
         """
-        self["master"].quit()
+        #for i in self["master"].winfo_children():
+        #    i.destroy()
+        raise NotImplemented()
+    def activeWidgets(self): #@TODO: FIX!
+        #for i in self["master"].winfo_children():
+        #    yield i
+        raise NotImplemented()
+    # Mainloop
     def mainloop(self):
         """
         Starts the Window mainloop.
@@ -1604,6 +1581,31 @@ class Tk:
         @return:
         """
         self._mainloop()
+    # Misc
+    def throwErrorSound(self):
+        self["master"].bell()
+        return self
+    def copyToClip(self, s):
+        self["master"].clipboard_append(str(s))
+        return self
+    def clearClip(self):
+        self["master"].clipboard_clear()
+        return self
+    def getClip(self):
+        return self["master"].clipboard_get()
+    def sleep(self, s):
+        """
+        Sleeps s seconds and updates the window in Background.
+        @param s:
+        @return:
+        """
+        temp = time()
+        while True:
+            if not self["destroyed"]: self.update()
+            if time()-temp >= s:
+                break
+        return self
+    # Private Implementations
     def _mainloop(self):
         """
         Private Implementations of 'mainloop' call.
@@ -1611,9 +1613,7 @@ class Tk:
         """
         if self["destroyed"]: return
         self._finishLastTasks()
-        self["isRunning"] = True
         self["master"].mainloop()
-        self["isRunning"] = False
         self["destroyed"] = True
     def _updateDynamicSize(self, widget):
         """
@@ -1622,8 +1622,8 @@ class Tk:
         @return:
         """
         if not widget["destroyed"] and "xOffset" in widget["placeRelData"]:# and widget["id"] in list(self["dynamicWidgets"].keys()):
-            widget._get().place_forget()
-            self._get().update_idletasks()
+            #widget._get().place_forget()
+            #self._get().update_idletasks()
             _data = widget["placeRelData"]
             x = _map(_data["xOffset"] + _data["xOffsetLeft"], 0, 100, 0, widget["master"].getWidth()) if _data["fixX"] is None else _data["fixX"]
             y = _map(_data["yOffset"] + _data["yOffsetUp"], 0, 100, 0, widget["master"].getHeight()) if _data["fixY"] is None else _data["fixY"]
@@ -1668,12 +1668,12 @@ class Tk:
                 for event in widget["registry"].getCallables("[relative_update_after]"):
                     event["value"] = [x, y, width, height]
                 handler()
-            widget._get().update_idletasks()
+            #widget._get().update_idletasks()
             widget["placed"] = True
     def updateDynamicWidgets(self):
         """
         Call this method to update all relative placed Widgets
-        wich are placed with 'placeRelative' manager.
+        which are placed with 'placeRelative' manager.
 
         @return:
         """
@@ -1687,7 +1687,6 @@ class Tk:
                 if isinstance(widget, _ToolTip): continue
                 if not widget["destroyed"]: self._updateDynamicSize(widget)
         return self
-
     def _internalOnClose(self):
         """
         internal onClose Event.
@@ -1702,18 +1701,21 @@ class Tk:
             if not runnable.event["setCanceled"]:
                 self.destroy()
     def _registerOnResize(self, widget):
+        """
+        Register Widgets to Auto resize.
+        """
         self["dynamicWidgets"][widget["id"]] = widget
     def _unregisterOnResize(self, widget):
         if list(self["dynamicWidgets"].keys()).__contains__(widget["id"]):
             del self["dynamicWidgets"][widget["id"]]
-    def _decryptWindowResize(self, args):
+    def _decryptWindowResize(self, args, event):
         _size = self.getWindowSize()
         if self["oldWinSize"] == _size:
             return "CANCEL"
         else:
             self["oldWinSize"] = _size
             return _size
-    def _decryptNonFilteredWindowResize(self, args):
+    def _decryptNonFilteredWindowResize(self, args, event):
         return self.getWindowSize()
     def _privateDecryptWindowResize(self, args, event):
         _size = self.getWindowSize()
@@ -1723,8 +1725,16 @@ class Tk:
             self["privateOldWinSize"] = _size
             return _size
     def _finishLastTasks(self):
-        _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
+        _EventHandler._registerNewEvent(self, self._customUpdateDynamicWidgetsHandler, EventType.SIZE_CONFIUGURE, args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
         self.updateDynamicWidgets()
+    def _customUpdateDynamicWidgetsHandler(self):
+        if not len(self._data): return #destroyed
+        self.updateDynamicWidgets()
+        return #TODO slower update rate on resize?
+
+        if self._data["last_size_conf_time"] is None or time() - self._data["last_size_conf_time"] > .5:
+            self._data["last_size_conf_time"] = time()
+            self.updateDynamicWidgets()
     def clearChildWidgets(self):
         """
         Clears the child-widgets.
@@ -1732,7 +1742,6 @@ class Tk:
         @return:
         """
         self._data["childWidgets"].clear()
-
     def addChildWidgets(self, *args):
         """
         Adds/Overwrites all Child widgets from this widget with new ones.
@@ -1742,7 +1751,6 @@ class Tk:
         """
         for w in args:
             self._data["childWidgets"][w["id"]] = w
-
     def unregisterChildWidget(self, w):
         """
         Unregisters specific Child widget from this Master.
@@ -1751,7 +1759,6 @@ class Tk:
         @return:
         """
         del self["childWidgets"][w["id"]]
-
     def getID(self)->str:
         return self["id"]
     @staticmethod
@@ -1768,27 +1775,6 @@ class Tk:
                 point(cw)
         point(widget)
         return ch
-    @staticmethod
-    def _getAllParentWidgets(widget):
-        ch = []
-
-        while True:
-            if isinstance(widget, Tk):
-                break
-            widget = widget["master"]
-            ch.append(widget)
-
-        return ch
-    @staticmethod #TODO FINISH
-    def _showParentChildTree(widget):
-        print("==Hierarchy==")
-        def point(_widget):
-            for cw in _widget["childWidgets"].values():
-                #print("".join([("| " if not isinstance(cw, _tk.Tk) and not isinstance(cw["master"], _tk.Tk) and not isinstance(cw["master"]["master"], _tk.Tk) and any([index == (len(Tk._getAllParentWidgets(cw))-2)]) and list(cw["master"]["master"]["childWidgets"].values()).index(cw["master"]) != len(list(cw["master"]["master"]["childWidgets"].values()))-1 else "  ") for index in range(len(Tk._getAllParentWidgets(cw))-1)]) + ("└" if len(_widget["childWidgets"].values())-1 == list(_widget["childWidgets"].values()).index(cw) else "├")+"─"+cw.__class__.__name__)
-                print("".join([("| " if not isinstance(cw, _tk.Tk) and not isinstance(cw["master"], _tk.Tk) and not isinstance(cw["master"]["master"], _tk.Tk) and any([index == (len(Tk._getAllParentWidgets(cw))-2)]) and list(cw["master"]["master"]["childWidgets"].values()).index(cw["master"]) != len(list(cw["master"]["master"]["childWidgets"].values()))-1 else "  ") for index in range(len(Tk._getAllParentWidgets(cw))-1)]) + ("" if len(_widget["childWidgets"].values())-1 == list(_widget["childWidgets"].values()).index(cw) else "")+""+cw.__class__.__name__)
-                point(cw)
-        print(widget.__class__.__name__)
-        point(widget)
     def _get(self):
         return self["master"]
 class Toplevel(Tk):
@@ -1799,12 +1785,12 @@ class Toplevel(Tk):
     """
     def __init__(self, _master, group=None, topMost=True):
         if isinstance(_master, Tk):
-            self._data = {"master": _tk.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "setSize":(), "isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
+            self._data = {"master": _tk.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "set_size":(), "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
             _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, str) and _master == "Tk":
-            self._data = {"master":_tk.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "setSize":(),"isRunning":False, "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(_randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
+            self._data = {"master":_tk.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "set_size":(), "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(_randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
             _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
@@ -2282,7 +2268,7 @@ class Widget:
             x, y = x.getLoc1().get()
         x = int(round(x, 0))
         y = int(round(y, 0))
-        self._get().place_forget()
+        #self._get().place_forget()
         self["widget"].place(x=x, y=y, width=width, height=height, anchor=anchor)
         self["placed"] = True
         return self
@@ -2296,8 +2282,8 @@ class Widget:
         try:
             self["widget"].place_forget()
             self["placed"] = False
-        except:
-            pass
+        except Exception as e:
+            print(format_exc())
         self["tkMaster"]._unregisterOnResize(self)
     def destroy(self):
         """
@@ -2394,10 +2380,6 @@ class Widget:
         return self["id"]
     def _decryptEvent(self, args, event):
         pass
-    def _id(self):
-        return self["id"]
-    def _register(self, e):
-        self["master"].register(e)
     def _setAttribute(self, name, value):
         if self._data["tkMaster"]["destroyed"]: return
         self["widgetProperties"][name] = value
@@ -2589,7 +2571,28 @@ class StyleBuilder:
     def applyTheme(id_:str):
         assert StyleBuilder._STYLE is not None, "There is no Style created yet!"
         StyleBuilder._STYLE.theme_use(id_)
+class State:
+    """
+    Use as following example:
 
+    state = State()
+    frame.bind(state.set, EventType.ENTER)
+    frame.bind(state.unset, EventType.LEAVE)
+    """
+    def __init__(self, default=False):
+        self._state = default
+    def set(self):
+        self._state = True
+    def unset(self):
+        self._state = False
+    def get(self):
+        return self._state
+    def __bool__(self):
+        return self._state
+    def __eq__(self, other):
+        return self._state == other
+    def __ne__(self, other):
+        return self._state != other
 class _ToolTip(Widget):
     """
     Create a tooltip for a given widget.
@@ -2942,6 +2945,8 @@ class ScrollBar(Widget):
         self["widget"]["width"] = w
         self["thickness"] = w-10
         return self
+    def set(self, a, b):
+        self._get().set(a, b)
     def _decryptEvent(self, args, event):
         return None
 class Frame(Widget):
@@ -6081,7 +6086,141 @@ class MenuPage(Frame):
         mainPage._menuData["history"] = [mainPage]
         self.placeForget()
         mainPage.openMenuPage()
-
+class ScrollableFrame(Frame):
+    def __init__(self, _master, innerFrameHeight:int, innerFrameWidth:int=None, group=None):
+        self._hasReturnedMaster = False
+        self._outerFrame = Frame(_master, group)
+        super().__init__(self._outerFrame, group)
+        self._shiftState = State()
+        self._getTkMaster().bind(self._shiftState.set, EventType.SHIFT_LEFT_DOWN)
+        self._getTkMaster().bind(self._shiftState.unset, EventType.SHIFT_LEFT_UP)
+        self._enterState = State()
+        self._outerFrame.bind(self._enterState.set, EventType.ENTER)
+        self._outerFrame.bind(self._enterState.unset, EventType.LEAVE)
+        self._outerFrame.bind(self._updatePlace, EventType.CUSTOM_RELATIVE_UPDATE)
+        self._scrollBarY = ScrollBar(self._outerFrame, False, group)
+        self._scrollBarX = ScrollBar(self._outerFrame, False, group).setOrientation(Orient.HORIZONTAL)
+        self._getTkMaster().bind(self._onScroll, EventType.WHEEL_MOTION)
+        self._innerFrameHeight = innerFrameHeight
+        self._innerFrameWidth = innerFrameWidth
+        self._currentYPos = 0
+        self._currentXPos = 0
+        self._currentSize = None
+        self._scrollSpeed = 25
+        self._scrollbarVisible = [True, True]
+    def setInnerFrameHeight(self, height:int):
+        self._innerFrameHeight = height
+        return self
+    def setInnerFrameWidth(self, width: int):
+        self._innerFrameWidth = width
+        return self
+    def see(self, i:int):
+        return self
+    def place(self, x=None, y=None, width=None, height=None, anchor:Anchor=Anchor.UP_LEFT):
+        assert width > 25, f"This size is too small for inner Frame! width:{width}"
+        self._currentSize = [width, height, (width if self._innerFrameWidth is None else self._innerFrameWidth), self._innerFrameHeight]
+        self._scrollBarY.place(width-20, 0, 20, height-20)
+        self._scrollBarX.place(0, height-20, width, 20)
+        super()._get().place(x=0, y=self._currentYPos, width=(width-20 if self._innerFrameWidth is None else self._innerFrameWidth), height=self._innerFrameHeight)
+        self._outerFrame.place(x, y, width, height, anchor)
+        self._updateScrollBar()
+    def _updateScrollBar(self):
+        if self._currentSize is None: return
+        oWidth, oHeight, iWidth, iHeight = self._currentSize
+        iHeight = oHeight if oHeight > iHeight else iHeight
+        self._scrollbarVisible = [
+            oWidth < iWidth,
+            oHeight < iHeight
+        ]
+        if oHeight < iHeight:
+            sHeightY = oHeight / iHeight
+            try: sStartY = _map(abs(self._currentYPos), 0, abs(oHeight-iHeight), 0, 100-sHeightY*100)/100
+            except ZeroDivisionError as e:
+                print(format_exc(), f"{abs(oHeight-iHeight)=}")
+                return
+            self._scrollBarY.set(sStartY, sStartY + sHeightY)
+        else:
+            self._scrollBarY.placeForget()
+        iWidth = oWidth if oWidth > iWidth else iWidth
+        if oWidth < iWidth:
+            sWidthX = oWidth / iWidth
+            try: sStartX = _map(abs(self._currentXPos), 0, abs(oWidth-iWidth), 0, 100-sWidthX*100)/100
+            except ZeroDivisionError as e:
+                print(format_exc(), f"{abs(oWidth-iWidth)=}")
+                return
+            self._scrollBarX.set(sStartX, sStartX+sWidthX)
+        else:
+            self._scrollBarX.placeForget()
+    def placeRelative(self, fixX:int=None, fixY:int=None, fixWidth:int=None, fixHeight:int=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
+        self._outerFrame.placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
+        return self
+    def getOuterFrame(self)->Frame:
+        return self._outerFrame
+    def _updatePlace(self, iY=None):
+        if type(iY) == Event:
+            x, y, w, h = iY.getValue()
+            if self._currentSize is not None:
+                diffY = h - self._currentSize[1]
+                if diffY > 0:
+                    if self._currentYPos+diffY < 0:
+                        self._currentYPos += diffY
+                    else:
+                        self._currentYPos = 0
+                diffX = w - self._currentSize[0]
+                if diffX > 0:
+                    if self._currentXPos + diffX < 0:
+                        self._currentXPos += diffX
+                    else:
+                        self._currentXPos = 0
+            self._currentSize = [w, h, (w if self._innerFrameWidth is None else self._innerFrameWidth), self._innerFrameHeight]
+            oWidth, oHeight, iWidth, iHeight = self._currentSize
+            if oHeight < iHeight:
+                self._scrollBarY.place(w-20, 0, 20, h-20)
+            if oWidth < iWidth:
+                self._scrollBarX.place(0, h-20, w-20, 20)
+            self._updateScrollBar()
+        oWidth, oHeight, iWidth, iHeight = self._currentSize
+        super()._get().place(x=self._currentXPos, y=self._currentYPos, width=(iWidth-20 if self._innerFrameWidth is None else self._innerFrameWidth), height=self._innerFrameHeight)
+    def _onScroll(self, e:Event):
+        if not self._enterState: return
+        if self._currentSize is None: return
+        oWidth, oHeight, iWidth, iHeight = self._currentSize
+        delta = e.getScrollDelta()
+        if not self._shiftState:
+            if iHeight < oHeight: return
+            if delta < 0: #down
+                if self._currentYPos >= oHeight-iHeight-(20 if self._scrollbarVisible[0] else 0):
+                    self._currentYPos -= self._scrollSpeed
+                if self._currentYPos-self._scrollSpeed < oHeight-iHeight-(20 if self._scrollbarVisible[0] else 0):
+                    self._currentYPos = oHeight-iHeight-(20 if self._scrollbarVisible[0] else 0)
+            else: # up
+                if self._currentYPos <= 0:
+                    self._currentYPos += self._scrollSpeed
+                if self._currentYPos+self._scrollSpeed > 0:
+                    self._currentYPos = 0
+        else:
+            if iWidth < oWidth: return
+            if delta < 0: # left
+                if self._currentXPos >= oWidth-iWidth-(20 if self._scrollbarVisible[1] else 0):
+                    self._currentXPos -= self._scrollSpeed
+                if self._currentXPos-self._scrollSpeed < oWidth-iWidth-(20 if self._scrollbarVisible[1] else 0):
+                    self._currentXPos = oWidth-iWidth-(20 if self._scrollbarVisible[1] else 0)
+            else: # right
+                if self._currentXPos <= 0:
+                    self._currentXPos += self._scrollSpeed
+                if self._currentXPos+self._scrollSpeed > 0:
+                    self._currentXPos = 0
+        self._updateScrollBar()
+        self._updatePlace()
+    def _get(self):
+        """
+        Returns outer frame instance once.
+        Returns inner frame instance.
+        """
+        if self._hasReturnedMaster:
+            self._hasReturnedMaster = False
+            return self._outerFrame._get()
+        return super()._get()
 
 #redundant class names
 Combobox = DropdownMenu
