@@ -1,4 +1,5 @@
-﻿import tkinter as _tk
+﻿import tk
+import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
 import tkinter.filedialog as _fd
@@ -6100,6 +6101,7 @@ class ScrollableFrame(Frame):
         self._outerFrame.bind(self._updatePlace, EventType.CUSTOM_RELATIVE_UPDATE)
         self._scrollBarY = ScrollBar(self._outerFrame, False, group)
         self._scrollBarX = ScrollBar(self._outerFrame, False, group).setOrientation(Orient.HORIZONTAL)
+        self._square = Label(self._outerFrame, group)
         self._getTkMaster().bind(self._onScroll, EventType.WHEEL_MOTION)
         self._innerFrameHeight = innerFrameHeight
         self._innerFrameWidth = innerFrameWidth
@@ -6114,8 +6116,8 @@ class ScrollableFrame(Frame):
     def setInnerFrameWidth(self, width: int):
         self._innerFrameWidth = width
         return self
-    def see(self, i:int):
-        return self
+    def getOuterFrame(self)->Frame:
+        return self._outerFrame
     def place(self, x=None, y=None, width=None, height=None, anchor:Anchor=Anchor.UP_LEFT):
         assert width > 25, f"This size is too small for inner Frame! width:{width}"
         self._currentSize = [width, height, (width if self._innerFrameWidth is None else self._innerFrameWidth), self._innerFrameHeight]
@@ -6124,6 +6126,9 @@ class ScrollableFrame(Frame):
         super()._get().place(x=0, y=self._currentYPos, width=(width-20 if self._innerFrameWidth is None else self._innerFrameWidth), height=self._innerFrameHeight)
         self._outerFrame.place(x, y, width, height, anchor)
         self._updateScrollBar()
+    def placeRelative(self, fixX:int=None, fixY:int=None, fixWidth:int=None, fixHeight:int=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
+        self._outerFrame.placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
+        return self
     def _updateScrollBar(self):
         if self._currentSize is None: return
         oWidth, oHeight, iWidth, iHeight = self._currentSize
@@ -6151,11 +6156,6 @@ class ScrollableFrame(Frame):
             self._scrollBarX.set(sStartX, sStartX+sWidthX)
         else:
             self._scrollBarX.placeForget()
-    def placeRelative(self, fixX:int=None, fixY:int=None, fixWidth:int=None, fixHeight:int=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
-        self._outerFrame.placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
-        return self
-    def getOuterFrame(self)->Frame:
-        return self._outerFrame
     def _updatePlace(self, iY=None):
         if type(iY) == Event:
             x, y, w, h = iY.getValue()
@@ -6172,6 +6172,7 @@ class ScrollableFrame(Frame):
                         self._currentXPos += diffX
                     else:
                         self._currentXPos = 0
+
             self._currentSize = [w, h, (w if self._innerFrameWidth is None else self._innerFrameWidth), self._innerFrameHeight]
             oWidth, oHeight, iWidth, iHeight = self._currentSize
             if oHeight < iHeight:
@@ -6179,6 +6180,10 @@ class ScrollableFrame(Frame):
             if oWidth < iWidth:
                 self._scrollBarX.place(0, h-20, w-20, 20)
             self._updateScrollBar()
+            if any(self._scrollbarVisible):
+                self._square.place(w-20, h-20, 20, 20)
+            else:
+                self._square.placeForget()
         oWidth, oHeight, iWidth, iHeight = self._currentSize
         super()._get().place(x=self._currentXPos, y=self._currentYPos, width=(iWidth-20 if self._innerFrameWidth is None else self._innerFrameWidth), height=self._innerFrameHeight)
     def _onScroll(self, e:Event):
