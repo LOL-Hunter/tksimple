@@ -1,4 +1,3 @@
-﻿import tk
 import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
