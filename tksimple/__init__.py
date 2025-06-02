@@ -1,4 +1,4 @@
-import tkinter as _tk
+﻿import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
 import tkinter.filedialog as _fd
@@ -5893,7 +5893,7 @@ class SimpleDialog:
     def askWarning(master, message="", title=""):
         return SimpleDialog._dialog(_msgb.showwarning, master, message=message, title=title)
     @staticmethod
-    def askString(master, message="", title="", initialValue="", hideWith=None):
+    def askString(master, message="", title="", initialValue="", hideWith=None)-> str | None:
         return SimpleDialog._dialog(_simd.askstring, master, prompt=message, title=title, show=hideWith, initialvalue=initialValue)
     @staticmethod
     def askInteger(master, message="", title="", initialValue=""):
@@ -5953,7 +5953,7 @@ class SimpleDialog:
                 dialog.destroy()
                 return _return
     @staticmethod
-    def chooseFromList(master, title="", values=None, chooseOnlyOne=True, forceToChoose=True)->str | list | None:
+    def chooseFromList(master, title="", values=None, chooseOnlyOne=True, forceToChoose=True, useIndexInstead=False, group=None)->str | int | list | None:
         _return = None
         _masterNone = False
 
@@ -5962,7 +5962,7 @@ class SimpleDialog:
             _return = "None"
         def select(e):
             nonlocal _return
-            sel = list_.getSelectedItem()
+            sel = list_.getSelectedIndex() if useIndexInstead else list_.getSelectedItem()
             if sel is None:
                 if forceToChoose:
                     SimpleDialog.askError(dialog, "Please choose at least one!")
@@ -5980,14 +5980,14 @@ class SimpleDialog:
             master = Tk()
             master.hide()
 
-        dialog = Dialog(master)
+        dialog = Dialog(master, group)
         dialog.onCloseEvent(onClose)
         if forceToChoose:
             dialog.setCloseable(False)
         dialog.setWindowSize(200, 200)
         dialog.setResizeable(False)
         dialog.setTitle(title)
-        list_ = Listbox(dialog)
+        list_ = Listbox(dialog, group)
         if chooseOnlyOne:
             list_.setSingleSelect()
         else:
@@ -5996,8 +5996,8 @@ class SimpleDialog:
         list_.placeRelative(changeHeight=-30)
         list_.bind(select, EventType.DOUBBLE_LEFT)
 
-        Button(dialog).setText("Select").placeRelative(stickDown=True, fixHeight=30, xOffsetRight=50).setCommand(select)
-        canc = Button(dialog).setText("Cancel").placeRelative(stickDown=True, stickRight=True, fixHeight=30, xOffsetRight=50).setCommand(cancel)
+        Button(dialog, group).setText("Select").placeRelative(stickDown=True, fixHeight=30, xOffsetRight=50).setCommand(select)
+        canc = Button(dialog, group).setText("Cancel").placeRelative(stickDown=True, stickRight=True, fixHeight=30, xOffsetRight=50).setCommand(cancel)
         if forceToChoose: canc.disable()
         dialog.show()
         while True:
@@ -6010,7 +6010,7 @@ class SimpleDialog:
             elif isinstance(_return, list):
                 dialog.destroy()
                 if _masterNone: master.destroy()
-                return _return
+                return _return[0] if chooseOnlyOne else _return
     @staticmethod
     def _dialog(d, master, **kwargs):
         if isinstance(master, Tk):
