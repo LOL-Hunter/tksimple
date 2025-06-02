@@ -1,4 +1,4 @@
-﻿import tkinter as _tk
+import tkinter as _tk
 import tkinter.colorchooser as _clc
 import tkinter.dnd as _dnd
 import tkinter.filedialog as _fd
