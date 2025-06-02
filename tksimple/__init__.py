@@ -1512,6 +1512,15 @@ class Tk:
         """
         self["master"].minsize(x, y)
     # Getter
+    def getMousePositionRelativeToScreen(self):
+        """
+        Returns the current mouse position relative to Screen.
+        @return:
+        """
+        return Location2D(
+            self["master"].winfo_pointerx(),
+            self["master"].winfo_pointery()
+        )
     def getMousePosition(self):
         """
         Returns the current mouse position on the TK window.
