@@ -2461,14 +2461,12 @@ class _LockableWidget(Widget):
         # enter UnLocking
         if not self._isDisabled: return
         super().setEnabled()
-        print("Unlock!")
     def _lock(self):
         self._lockVal -= 1
         if self._lockVal != 0: return
         # leave Unlocking
         if self._isReadOnly or self._isDisabled:
             super().setDisabled()
-            print("lock!")
     def setEnabled(self):
         if not self._isDisabled: return
         super().setEnabled()
