@@ -1784,7 +1784,7 @@ class Tk:
                 point(cw)
         point(widget)
         return ch
-    def _getTkMaster(self)-> Tk | Toplevel:
+    def _getTkMaster(self):
         """
         Returns the highest master (Tk/Toplevel) of this widget.
 
