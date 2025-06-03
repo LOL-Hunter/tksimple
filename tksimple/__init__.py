@@ -72,10 +72,13 @@ class Location2D:
             return True
     def __add__(self, other):
         return Location2D(self.getX()+other.getX(), self.getY()+other.getY())
+    def __sub__(self, other):
+        return Location2D(self.getX() - other.getX(), self.getY() - other.getY())
     def __repr__(self):
         return "Location2D("+str(self["x"])+", "+str(self["y"])+")"
     def __len__(self):
         return 2
+
     def toInt(self):
         self._coords["x"] = int(self._coords["x"])
         self._coords["y"] = int(self._coords["y"])
@@ -132,6 +135,19 @@ def _map(value, iMin, iMax, oMin=None, oMax=None):
         iMin = 0
         oMin = 0
     return int((value-iMin) * (oMax-oMin) / (iMax-iMin) + oMin)
+def _lockable(func):
+    """
+    Decorator for locking Widgets which can be disabled.
+    """
+    def _callable(*args):
+        obj = args[0]
+        if isinstance(obj, _LockableWidget):
+            obj._unlock()
+            retVal = func(*args)
+            obj._lock()
+            return retVal
+        return func(*args)
+    return _callable
 class Rect:
     def __init__(self, loc1, loc2):
         self.ratio = None
@@ -1892,6 +1908,7 @@ class Widget:
             self["group"].remove(self._ins)
         self._data.clear()
     # Attribute Setter Methods
+    @_lockable
     def setBg(self, col:Union[Color, str]):
         """
         Set the background color of this widget.
@@ -2410,6 +2427,47 @@ class Widget:
         return list(self["childWidgets"].values())
     def _get(self):
         return self["widget"]
+class _LockableWidget(Widget):
+    """
+    Private implementation of tkinter's [state="disabled"].
+    """
+    def __init__(self, ins, _data, group):
+        self._isDisabled = False
+        self._isReadOnly = False
+        self._lockVal = 0
+        super().__init__(ins, _data, group)
+
+        # setReadOnly
+        if self._isReadOnly:
+            self.setDisabled()
+            return
+        self.setEnabled()
+
+    def _setReadOnly(self, b:bool):
+        self._isReadOnly = b
+
+    def _unlock(self):
+        self._lockVal += 1
+        if self._lockVal > 1: return
+        # enter UnLocking
+        if not self._isDisabled: return
+        super().setEnabled()
+        print("Unlock!")
+    def _lock(self):
+        self._lockVal -= 1
+        if self._lockVal != 0: return
+        # leave Unlocking
+        if self._isReadOnly or self._isDisabled:
+            super().setDisabled()
+            print("lock!")
+    def setEnabled(self):
+        if not self._isDisabled: return
+        super().setEnabled()
+        self._isDisabled = False
+    def setDisabled(self):
+        if self._isDisabled: return
+        super().setDisabled()
+        self._isDisabled = True
 class _WidgetGroupMethod:
     def __init__(self, _ins, name):
         self._ins = _ins
@@ -3454,12 +3512,12 @@ class OnOffButton(Widget):
             if self["color"]: self.setBg(Color.RED)
             if self["relief"]: self.setStyle(Style.RAISED)
         return self["value"]
-class Entry(Widget):
+class Entry(_LockableWidget):
     """
     Widget:
     The Entry is used to ask single line text from the user.
     """
-    def __init__(self, _master, group=None):
+    def __init__(self, _master, group=None, readOnly=False):
         self.getValue = self.getText
         self.setValue = self.setText
         if isinstance(_master, dict):
@@ -3468,6 +3526,7 @@ class Entry(Widget):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             self._data = {"master":_master,  "widget":_tk.Entry(_master._get())}
+            self._setReadOnly(readOnly)
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -3545,6 +3604,7 @@ class Entry(Widget):
         """
         self._setAttribute("show", str(i))
         return self
+    @_lockable
     def clear(self):
         """
         Clears the Entry.
@@ -3552,6 +3612,7 @@ class Entry(Widget):
         """
         self["widget"].delete(0, _tk.END)
         return self
+    @_lockable
     def setText(self, text:str):
         """
         Overwrites the text content in the Entry.
@@ -3561,6 +3622,7 @@ class Entry(Widget):
         self.clear()
         self["widget"].insert(0, str(text))
         return self
+    @_lockable
     def addText(self, text:str, index="end"):
         """
         Adds the text at 'index', by default at the end.
@@ -4365,7 +4427,7 @@ class _ScrolledText(_tk.Text):
                 setattr(self, m, getattr(self.frame, m))
     def __str__(self):
         return str(self.frame)
-class Text(Widget):
+class Text(_LockableWidget):
     """
     Widget:
     Textbox where the user can input Text.
@@ -4380,7 +4442,8 @@ class Text(Widget):
         elif isinstance(_master, self.__class__):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master,  "widget": _ScrolledText(_master._get()) if scrollAble else _tk.Text(_master._get()), "forceScroll":forceScroll, "tagCounter":0, "scrollable":scrollAble, "init":{"state":"disabled" if readOnly else "normal"}}
+            self._data = {"master": _master,  "widget": _ScrolledText(_master._get()) if scrollAble else _tk.Text(_master._get()), "forceScroll":forceScroll, "tagCounter":0, "scrollable":scrollAble}
+            self._setReadOnly(readOnly)
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -4472,7 +4535,6 @@ class Text(Widget):
             else:
                 print(f"'{textSection}' has no valid color tag.")
             firstMarkerChar = int(secondMarker.split(".")[1])
-
     def setText(self, text:str, color:Union[Color, str]="black", font:Font=None):
         """
         Overwrites the text with 'text'.
@@ -4482,6 +4544,7 @@ class Text(Widget):
         self.clear()
         self.addText(text, color, font)
         return self
+    @_lockable
     def addText(self, text:str, color:Union[Color, str]="black", font:Font=None):
         """
         Adds text to the Text box.
@@ -4492,11 +4555,7 @@ class Text(Widget):
         @return:
         """
         color = color.value if hasattr(color, "value") else color
-        disableAfterWrite=False
         self["tagCounter"]+=1
-        if self["widgetProperties"]["state"] == "disabled":
-            self.setEnabled()
-            disableAfterWrite = True
         content = self.getText()
         self["widget"].insert("end", str(text))
         if color != "black" or font is not None:
@@ -4516,8 +4575,6 @@ class Text(Widget):
         if self["forceScroll"]:
             self["widget"].see("end")
         self["tagCounter"]+=text.count("\n")
-        if disableAfterWrite:
-            self.setDisabled()
         return self
     def getText(self)->str:
         """
@@ -4533,21 +4590,16 @@ class Text(Widget):
         """
         self["widget"].see("end")
         return self
+    @_lockable
     def clear(self):
         """
         Clears the Textbox.
         @return:
         """
-        disableAfterWrite = False
-        if self["widgetProperties"]["state"] == "disabled":
-            self.setEnabled()
-            disableAfterWrite = True
         self["widget"].delete(0.0, _tk.END)
         for i in self["widget"].tag_names():
             self["widget"].tag_delete(i)
         self["tagCounter"] = 0
-        if disableAfterWrite:
-            self.setDisabled()
         return self
     def getSelectedText(self)->Union[str, None]:
         """
@@ -4986,7 +5038,7 @@ class TreeView(Widget):
         return [self["widget"].item(i) for i in self._getIds()]
     def _getIds(self):
         return self["widget"].get_children()
-class SpinBox(Widget):
+class SpinBox(_LockableWidget):
     def __init__(self, _master, group=None, optionList:list=(), readOnly=True):
         if isinstance(_master, dict):
             self._data = _master
@@ -4994,6 +5046,7 @@ class SpinBox(Widget):
             self._data = _master._data
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame):
             self._data = {"master": _master,  "widget": _tk.Spinbox(_master._get()), "readonly":readOnly, "init":{"state":"readonly" if readOnly else "normal", "values":list(optionList)}}
+            self._setReadOnly(readOnly)
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -5001,26 +5054,16 @@ class SpinBox(Widget):
         _EventHandler._registerNewCommand(self, func, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs, decryptValueFunc=self._decryptEvent)
     def onUserInputEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         _EventHandler._registerNewEvent(self, func, EventType.KEY_UP, args, priority, decryptValueFunc=self._decryptEvent, defaultArgs=defaultArgs, disableArgs=disableArgs)
+    @_lockable
     def setValue(self, v, clearFirst=True):
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled()
         if clearFirst: self.clear()
         self["widget"].insert(0, str(v))
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
         return self
     def getValue(self)->str:
         return self["widget"].get()
+    @_lockable
     def setOptionList(self, l:list):
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled()
         self._setAttribute("values", l)
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
     def clear(self):
         self["widget"].delete(0, "end")
     def setButtonStyle(self, style:Style):
@@ -5045,7 +5088,7 @@ class SpinBox(Widget):
         return self
     def _decryptEvent(self, args, event):
         return self.getValue()
-class DropdownMenu(Widget):
+class DropdownMenu(_LockableWidget):
     def __init__(self, _master, group=None, optionList:list=[], readonly=True):
         if isinstance(_master, dict):
             self._data = _master
@@ -5054,9 +5097,7 @@ class DropdownMenu(Widget):
         elif isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             stringVar = _tk.StringVar()
             self._data = {"master": _master,  "widget":_ttk.Combobox(_master._get(), textvariable=stringVar), "values":optionList, "stringVar":stringVar, "readonly":readonly, "init":{"state":"readonly" if readonly else "normal", "values":list(optionList)}}
-            self.style= _ttk.Style()
-            #self.style.theme_use("clam")
-
+            self._setReadOnly(readonly)
         else:
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
         super().__init__(self, self._data, group)
@@ -5079,66 +5120,37 @@ class DropdownMenu(Widget):
     def onUserInputEvent(self, func, args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
         _EventHandler._registerNewValidateCommand(self, func, args, priority, "all", decryptValueFunc=self._decryptEvent2, defaultArgs=defaultArgs, disableArgs=disableArgs)
         return self
+    @_lockable
     def setValueByIndex(self, i:int):
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled(True)
         self["widget"].current(i)
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
         return self
     def getSelectedIndex(self)-> int | None:
         val = self["widget"].get()
         if val in self._data["values"]:
             return self._data["values"].index(val)
         return None
+    @_lockable
     def clear(self):
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled(True)
         self["widget"].delete(0, "end")
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
         return self
     def setText(self, text):
         self.setValue(text)
         return self
+    @_lockable
     def setValue(self, text, clearFirst=True):
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled(True)
         if clearFirst: self["widget"].delete(0, "end")
         self["widget"].insert(0, str(text))
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
         return self
     def getValue(self):
         return self["widget"].get()
+    @_lockable
     def setOptionList(self, it:List[str]):
         self["values"] = it
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled(True)
         self._setAttribute("values", it)
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
         return self
     def addOption(self, i:str):
         self["values"].append(i)
         self.setOptionList(self["values"])
-        return self
-    def setBg(self, col:Union[Color, str]):
-        disableAfterWrite = False
-        if self["readonly"]:
-            disableAfterWrite = True
-            self.setEnabled(True)
-        self.style.map("TCombobox", fieldbackground="red")#(col.value if hasattr(col, "value") else col)
-        if disableAfterWrite:
-            self._setAttribute("state", "readonly")
         return self
     def _decryptEvent(self, args, event):
         return self["widget"].get()
@@ -6245,3 +6257,14 @@ class ScrollableFrame(Frame):
 #redundant class names
 Combobox = DropdownMenu
 Menu = TaskBar
+if __name__ == '__main__':
+    master = Tk()
+
+    sg = WidgetGroup()
+    sg.addCommand("setBg", "red")
+
+
+
+    l = Entry(master, sg)
+    l.place(0, 0, 100, 50)
+    master.mainloop()
