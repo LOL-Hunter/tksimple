@@ -212,8 +212,6 @@ class TKExceptions:
         pass
     class BindException(Exception):
         pass
-    class DialogGrabFailedException(Exception):
-        pass
 class Symbol:
     """
     Example Symbol collection.
@@ -1861,11 +1859,9 @@ class Dialog(Toplevel):
 
         @return:
         """
-        try:
-            self._get().grab_set()
-        except _tk.TclError:
-            raise TKExceptions.DialogGrabFailedException()
         self["master"].deiconify()
+        self._get().wait_visibility()
+        self._get().grab_set()
     def hide(self):
         """
         Hides the dialog.
