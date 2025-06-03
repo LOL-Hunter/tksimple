@@ -212,6 +212,8 @@ class TKExceptions:
         pass
     class BindException(Exception):
         pass
+    class DialogGrabFailedException(Exception):
+        pass
 class Symbol:
     """
     Example Symbol collection.
@@ -932,7 +934,10 @@ class _EventHandler:
             if type(err) == KeyError:
                 print(_info)
             else:
-                err.args = (str(_info)+str(err.args[0]),)
+                if len(err.args) > 0:
+                    err.args = (str(_info)+str(err.args[0]),)
+                else:
+                    err.args = (str(_info),)
 
         args = args[0] if len(args) == 1 else list(args)
         event = None
@@ -1856,7 +1861,10 @@ class Dialog(Toplevel):
 
         @return:
         """
-        self._get().grab_set()
+        try:
+            self._get().grab_set()
+        except _tk.TclError:
+            raise TKExceptions.DialogGrabFailedException()
         self["master"].deiconify()
     def hide(self):
         """
@@ -2433,7 +2441,8 @@ class _LockableWidget(Widget):
     """
     def __init__(self, ins, _data, group):
         self._isDisabled = False
-        self._isReadOnly = False
+        if not hasattr(self, "_isReadOnly"):
+            self._isReadOnly = False
         self._lockVal = 0
         super().__init__(ins, _data, group)
 
@@ -3993,7 +4002,7 @@ class Listbox(Widget):
         if len(self.getAllSlots()) != 0:
             self.setSlotBg((self.length()-1 if index=="end" else index), color)
         return self
-    def addAll(self, entry:[str], index="end", color:Union[Color, str]=None):
+    def addAll(self, entry:List[str], index:str="end", color:Union[Color, str]=None):
         """
         Adds a list of entrys to the Listbox.
         When adding large amounts of items this is way faster than 'add' method and a for loop.
@@ -6257,14 +6266,3 @@ class ScrollableFrame(Frame):
 #redundant class names
 Combobox = DropdownMenu
 Menu = TaskBar
-if __name__ == '__main__':
-    master = Tk()
-
-    sg = WidgetGroup()
-    sg.addCommand("setBg", "red")
-
-
-
-    l = Entry(master, sg)
-    l.place(0, 0, 100, 50)
-    master.mainloop()
