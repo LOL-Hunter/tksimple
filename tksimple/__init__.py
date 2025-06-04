@@ -1531,7 +1531,7 @@ class Tk:
         """
         self["master"].minsize(x, y)
     # Getter
-    def getWindowPositionOnScreen(self)->Location2D:
+    def getPositionOnScreen(self)->Location2D:
         return Location2D(
             self["master"].winfo_rootx(),
             self["master"].winfo_rooty()
@@ -2077,7 +2077,7 @@ class Widget:
         """
         self.updateIdleTasks()
         return self["widget"].winfo_width()
-    def getRelScreenPos(self)->Location2D:
+    def getPositionRelativeToScreen(self)->Location2D:
         """
         Returns the location of this widget relative to the screen.
         """
