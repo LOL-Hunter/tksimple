@@ -1590,6 +1590,11 @@ class Tk:
         @return:
         """
         return self["master"].winfo_width(), self["master"].winfo_height()
+    def getParentWindow(self):
+        """
+        Returns Parent Master instance. Tk, Toplevel or Dialog.
+        """
+        return self._getTkMaster()
     # Fix
     def clearAllWidgets(self):
         """
@@ -2109,6 +2114,11 @@ class Widget:
         @return:
         """
         return Location2D(self["widget"].winfo_vrootx(), self["widget"].winfo_vrooty())
+    def getParentWindow(self)-> Tk | Toplevel | Dialog:
+        """
+        Returns Parent Master instance. Tk, Toplevel or Dialog.
+        """
+        return self._getTkMaster()
     # Misc Methods
     def isFocus(self):
         """
@@ -2378,7 +2388,7 @@ class Widget:
         for k, v in zip(kwargs.keys(), kwargs.values()):
             self._setAttribute(k, v)
         return self
-    def _getTkMaster(self)-> Tk | Toplevel:
+    def _getTkMaster(self)-> Tk | Toplevel | Dialog:
         """
         Returns the highest master (Tk/Toplevel) of this widget.
 
