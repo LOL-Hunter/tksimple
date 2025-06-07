@@ -14,6 +14,7 @@ from time import strftime, time, sleep
 from threading import Thread
 from traceback import format_exc
 from typing import Union, Callable, List
+from types import FunctionType
 from webbrowser import open as openURL
 import os
 #TODO parameter description in __init__
@@ -1055,6 +1056,7 @@ class _EventHandler:
         event["eventType"] = eventType
         event["priority"] = priority
         handler = obj["registry"].addEvent(event, eventType)
+        _EventHandler._checkMethod(func, event)
         if handler is not None:
             try:
                 obj._get().bind(eventType, handler)
@@ -1076,6 +1078,7 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = "cmd"
         handler = obj["registry"].addEvent(event, "cmd")
+        _EventHandler._checkMethod(func, event)
         if not onlyGetRunnable:
             if handler is not None:
                 obj._get()[cmd] = handler
@@ -1098,6 +1101,7 @@ class _EventHandler:
         event["forceReturn"] = True
         event["eventType"] = "vcmd"
         handler = obj["registry"].addEvent(event, "vcmd")
+        _EventHandler._checkMethod(func, event)
         if handler is not None:
             obj["widget"]["validate"] = type_
             obj["widget"]["validatecommand"] = (obj["master"]._get().register(handler), '%P')
@@ -1115,6 +1119,7 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = "trace"
         handler = obj["registry"].addEvent(event, "trace")
+        _EventHandler._checkMethod(func, event)
         if handler is not None:
             var.trace("w", handler)
         event["handler"] = _EventHandler(event)
@@ -1131,6 +1136,7 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["afterTriggered"] = after
         event["eventType"] = "runnable"
+        _EventHandler._checkMethod(func, event)
         handler = obj["registry"].addEvent(event, "runnable")
         if handler is not None:
             event["handler"] = handler
@@ -1155,8 +1161,7 @@ class _EventHandler:
         handler = obj["registry"].addEvent(event, eventType)
         eventType = eventType.value if hasattr(eventType, "value") else eventType
         event["handler"] = _EventHandler(event)
-
-
+        _EventHandler._checkMethod(func, event)
         if eventType == "[relative_update]" or eventType == "[relative_update_after]":
             obj["placeRelData"]["handler"] = _EventHandler(event)
 
@@ -1177,9 +1182,24 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = eventType
         handler = obj["registry"].addEvent(event, eventType)
+        _EventHandler._checkMethod(func, event)
         if handler is not None:
             obj._get().tag_bind(id_, eventType, handler)
         event["handler"] = _EventHandler(event)
+    @staticmethod
+    def _checkMethod(func, event):
+        if func is None: return
+        if not hasattr(func, "__code__"): return
+        if event["disableArgs"]: return
+
+        argCount:int = func.__code__.co_argcount
+        varNames:(str,) = func.__code__.co_varnames
+
+        if isinstance(func, FunctionType) and argCount == 0:
+            event["disableArgs"] = True
+        elif argCount == 1:
+            event["disableArgs"] = True
+
 class _TaskScheduler:
     def __init__(self, _master, delay, func, repete=False, dynamic=False):
         if hasattr(_master, "_get"):
