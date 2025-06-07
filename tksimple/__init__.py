@@ -11,6 +11,7 @@ from enum import Enum as _Enum
 from random import randint as _randint, choice as _choice
 from string import ascii_lowercase
 from time import strftime, time, sleep
+from threading import Thread
 from traceback import format_exc
 from typing import Union, Callable, List
 from webbrowser import open as openURL
@@ -21,7 +22,7 @@ import os
 #TODO Remove pysettings.text package
 #TODO write description
 #TODO TextEntry.placeRelative implementation
-
+_WATCHER = None
 WIDGET_DELETE_DEBUG = False
 """
 
@@ -148,6 +149,13 @@ def _lockable(func):
             return retVal
         return func(*args)
     return _callable
+def enableRelativePlaceOptimization(runEvySec=2, runSecAftr=.2):
+    global _WATCHER
+    assert _WATCHER is None, "Relative Place Optimization cannot enabled twice!"
+    _WATCHER = _RunWatcher()
+    _RunWatcher._runEverySecond = runEvySec
+    _RunWatcher._runAfterSecond = runSecAftr
+    _WATCHER.start()
 class Rect:
     def __init__(self, loc1, loc2):
         self.ratio = None
@@ -196,6 +204,51 @@ class Rect:
         else:
             self.loc1 = Location2D(rect.loc1.getX()+offset, rect.loc1.getY()+offset)
             self.loc2 = Location2D(rect.loc1.getX()+newWidth, rect.loc1.getY()+newHeight)
+class _RunWatcher(Thread):
+    _runEverySecond=None
+    _runAfterSecond=None
+    _queue = []
+    def __init__(self):
+        super().__init__(daemon=True)
+    @staticmethod
+    def runFunc(func, args):
+        return func(*args)
+    def run(self):
+        while True:
+            sleep(.1)
+            if not _RunWatcher._queue: continue
+            for i, j in enumerate(_RunWatcher._queue):
+                if j is None: continue
+                if time() - j[0] >= _RunWatcher._runAfterSecond:
+                    _RunWatcher.runFunc(j[1], j[2])
+                    _RunWatcher._queue[i] = None
+
+    @staticmethod
+    def register()->int:
+        _RunWatcher._queue.append(None)
+        return len(_RunWatcher._queue)-1
+    @staticmethod
+    def runWatcher(func):
+        _id = _RunWatcher.register()
+        _hook = None
+        _timer = None
+        def watcher(*args):
+            if _RunWatcher._runAfterSecond is None:
+                return func(*args)
+            nonlocal _timer
+            _RunWatcher._queue[_id] = (time(), func, args)
+            if _timer is None:
+                _timer = time()
+                _RunWatcher._queue[_id] = None
+                return _RunWatcher.runFunc(func, args)
+            elif time() - _timer >= _RunWatcher._runEverySecond:
+                _timer = time()
+                _RunWatcher._queue[_id] = None
+                return _RunWatcher.runFunc(func, args)
+            return None
+        _hook = func
+        return watcher
+runWatcherDec = _RunWatcher.runWatcher
 
 class TKExceptions:
     class InvalidFileExtention(Exception):
@@ -918,12 +971,13 @@ class _EventHandler:
         def raiseError(err):
             info = f"""
 \tCould not execute bound event method!
-\t\tBoundTo:   '{"" if not hasattr(event["func"], "__self__") else event["func"].__self__.__class__.__name__ + "."}{event["func"] if not hasattr(event["func"], "__name__") else event["func"].__name__}' 
-\t\tWidget:    '{type(event["widget"]).__name__}'
-\t\tEventType: '{event["eventType"]}'
-\t\tpriority:  {event["priority"]}
-\t\targs:      {event["args"]}
-\t\tvalue:     {event["value"]}"""
+\t\tBoundTo:         '{"" if not hasattr(event["func"], "__self__") else event["func"].__self__.__class__.__name__ + "."}{event["func"] if not hasattr(event["func"], "__name__") else event["func"].__name__}' 
+\t\tWidget:          '{type(event["widget"]).__name__}'
+\t\tEventType:       '{event["eventType"]}'
+\t\tpriority:        {event["priority"]}
+\t\targs:            {event["args"]}
+\t\tvalue:           {event["value"]}
+\t\tBound Func Args: {event["func"].__code__.co_varnames}"""
             _max = max([len(i) for i in info.splitlines()])
             if _max < 111: _max = 111
             _info = ""
@@ -956,16 +1010,14 @@ class _EventHandler:
                         event["pos"] = Location2D(args.x, args.y)
                 args = event
             # call event
-            if ((not hasattr(func, "__code__")) or ("self" in func.__code__.co_varnames and func.__code__.co_argcount > 1) or ("self" not in func.__code__.co_varnames and func.__code__.co_argcount > 0)) and not event["disableArgs"]:
-                try: out = func(args)
-                except Exception as e:
-                    raiseError(e)
-                    raise
-            else:
-                try: out = func()
-                except Exception as e:
-                    raiseError(e)
-                    raise
+            try:
+                if event["disableArgs"]:
+                    out = func()
+                else:
+                    out = func(args)
+            except Exception as e:
+                raiseError(e)
+                raise
             if not len(event._data): return False # destroyed
             if event["afterTriggered"] is not None: event["afterTriggered"](event, out)
         # After all events are processed
@@ -1718,12 +1770,20 @@ class Tk:
         # OLD implementation
         #for widget in list(self["dynamicWidgets"].values())[::-1]: # place frames first
         #    if not widget["destroyed"]: self._updateDynamicSize(widget)
-
+        #D = {}
+        #print("######### WIDGETS TO PLACE REL ############")
         relevantIDs = list(self["dynamicWidgets"].keys())
         for widget in self._getAllChildWidgets(self):
             if widget._getID() in relevantIDs:
                 if isinstance(widget, _ToolTip): continue
+
+                #key = widget.__class__.__name__
+                #if key in D.keys(): D[key] += 1
+                #else: D[key] = 1
+
                 if not widget["destroyed"]: self._updateDynamicSize(widget)
+        #for k in D.keys(): print(f"{k}: {D[k]}")
+        #print("############################################")
         return self
     def _internalOnClose(self):
         """
@@ -1765,14 +1825,10 @@ class Tk:
     def _finishLastTasks(self):
         _EventHandler._registerNewEvent(self, self._customUpdateDynamicWidgetsHandler, EventType.SIZE_CONFIUGURE, args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
         self.updateDynamicWidgets()
-    def _customUpdateDynamicWidgetsHandler(self):
+    @runWatcherDec
+    def _customUpdateDynamicWidgetsHandler(self, e):
         if not len(self._data): return #destroyed
         self.updateDynamicWidgets()
-        return #TODO slower update rate on resize?
-
-        if self._data["last_size_conf_time"] is None or time() - self._data["last_size_conf_time"] > .5:
-            self._data["last_size_conf_time"] = time()
-            self.updateDynamicWidgets()
     def clearChildWidgets(self):
         """
         Clears the child-widgets.
@@ -1831,12 +1887,12 @@ class Toplevel(Tk):
     def __init__(self, _master, group=None, topMost=True):
         if isinstance(_master, Tk):
             self._data = {"master": _tk.Toplevel(), "tkMaster":_master, "registry":_EventRegistry(self), "set_size":(), "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1), "id":"".join([str(_randint(0,9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
-            _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
+            _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize, disableArgs=True)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, str) and _master == "Tk":
             self._data = {"master":_tk.Tk(), "tkMaster":_master, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "set_size":(), "destroyed":False, "hasMenu":False, "childWidgets":{},"oldWinSize":(-1, -1), "privateOldWinSize":(-1, -1),"id":"".join([str(_randint(0, 9)) for _ in range(15)]), "dynamicWidgets":{}, "title":"", "closeRunnable":None}
-            _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize)
+            _EventHandler._registerNewEvent(self, self.updateDynamicWidgets, EventType.key("<Configure>"), args=[], priority=1, decryptValueFunc=self._privateDecryptWindowResize, disableArgs=True)
             # configure internal onCloseEvent
             self["master"].protocol("WM_DELETE_WINDOW", self._internalOnClose)
         elif isinstance(_master, Toplevel):
