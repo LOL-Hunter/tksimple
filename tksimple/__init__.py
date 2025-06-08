@@ -1967,17 +1967,15 @@ class Widget:
         self.enable = self.setEnabled
         self.setBackgroundColor = self.setBg
         self.setForegroundColor = self.setFg
-        if list(_data.keys()).__contains__("id"): self._data = _data
-        else:
-            _data["tkMaster"] = _data["master"] if isinstance(_data["master"], Tk) else _data["master"]["tkMaster"]
-            id = "".join([str(_randint(0,9)) for _ in range(15)])
-            self._data = {**_data, **{"widgetProperties":{},"childWidgets":{}, "id":id, "placed":True, "destroyed":False, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "group":group}}
-            self._data["master"]["childWidgets"][self["id"]] = self._ins
-            if list(_data.keys()).__contains__("init"):
-                for key, value in zip(_data["init"].keys(), _data["init"].values()):
-                    if key == "func": value()
-                    else: self._setAttribute(name=key, value=value)
-                del _data["init"]
+        _data["tkMaster"] = _data["master"] if isinstance(_data["master"], Tk) else _data["master"]["tkMaster"]
+        id = "".join([str(_randint(0,9)) for _ in range(15)])
+        self._data = {**_data, **{"widgetProperties":{},"childWidgets":{}, "id":id, "placed":True, "destroyed":False, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "group":group}}
+        self._data["master"]["childWidgets"][self["id"]] = self._ins
+        if "init" in _data.keys():
+            for key, value in zip(_data["init"].keys(), _data["init"].values()):
+                if key == "func": value()
+                else: self._setAttribute(name=key, value=value)
+            del _data["init"]
         if group is not None:
             group.add(self._ins)
     def __getitem__(self, item):
