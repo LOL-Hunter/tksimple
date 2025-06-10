@@ -12,7 +12,7 @@ from .event import _EventHandler, _EventRegistry, Event
 from .const import *
 from .tkmath import Location2D, Rect
 from .image import PILImage, TkImage
-from .window import Toplevel
+from .window import Toplevel, Tk
 
 class Widget:
     """

@@ -1,5 +1,5 @@
 from typing import Union, Callable
-from types import FunctionType
+from types import FunctionType, MethodType
 
 from .tkmath import Location2D
 from .util import _isinstance
@@ -439,5 +439,5 @@ class _EventHandler:
 
         if isinstance(func, FunctionType) and argCount == 0:
             event["disableArgs"] = True
-        elif argCount == 1:
+        elif isinstance(func, MethodType) and argCount == 1:
             event["disableArgs"] = True
