@@ -20,10 +20,6 @@ class Widget:
     """
     def __init__(self, ins, _data, group):
         self._ins = self if ins is None else ins
-        self.disable = self.setDisabled
-        self.enable = self.setEnabled
-        self.setBackgroundColor = self.setBg
-        self.setForegroundColor = self.setFg
         _data["tkMaster"] = _data["master"] if _isinstance(_data["master"], "Tk") else _data["master"]["tkMaster"]
         id = "".join([str(_randint(0,9)) for _ in range(15)])
         self._data = {**_data, **{"widgetProperties":{},"childWidgets":{}, "id":id, "placed":True, "destroyed":False, "placeRelData":{"handler":None}, "registry":_EventRegistry(self), "group":group}}
@@ -834,8 +830,6 @@ class Checkbutton(Widget):
     The Checkbutton is basicly a Label with a checkbox on the left.
     """
     def __init__(self, _master, group=None, widgetClass=_tk.Checkbutton):
-        self.getValue = self.getState
-        self.setValue = self.setState
         if isinstance(_master, _SubMenu):
             self._data = {"master": _master._master,  "widget": _tk.Checkbutton(_master._master._get()), "instanceOfMenu":True}
             _master._widgets.append(["checkbutton", self])
@@ -913,7 +907,6 @@ class Radiobutton:
     These can be placed and used as normal widgets.
     """
     def __init__(self, _master, group=None):
-        self.getValue = self.getState
         if _isinstance(_master, "Tk") or isinstance(_master, NotebookTab) or _isinstance(_master, "Canvas") or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             intVar = _IntVar(_master)
             self._data = {"master": _master,  "widgets":[], "intVar":intVar, "eventArgs":[], "group":group}
@@ -1108,8 +1101,6 @@ class Entry(_LockableWidget):
     The Entry is used to ask single line text from the user.
     """
     def __init__(self, _master, group=None, readOnly=False):
-        self.getValue = self.getText
-        self.setValue = self.setText
         if _isinstance(_master, "Tk") or isinstance(_master, NotebookTab) or _isinstance(_master, "Canvas") or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             self._data = {"master":_master,  "widget":_tk.Entry(_master._get())}
             self._setReadOnly(readOnly)
@@ -1199,7 +1190,7 @@ class Entry(_LockableWidget):
         self["widget"].delete(0, _tk.END)
         return self
     @_lockable
-    def setText(self, text:str):
+    def setValue(self, text:str):
         """
         Overwrites the text content in the Entry.
         @param text:
@@ -1218,7 +1209,7 @@ class Entry(_LockableWidget):
         """
         self["widget"].insert(index, str(text))
         return self
-    def getText(self)->str:
+    def getValue(self)->str:
         """
         Returns the text content from the Entry.
         @return:
@@ -1536,7 +1527,6 @@ class Scale(Widget):
     Adds a Slider to set values from specified value range.
     """
     def __init__(self, _master, group=None, from_=0, to=100, orient:Orient=Orient.HORIZONTAL):
-        self.setResolution = self.setSteps
         if _isinstance(_master, "Tk") or isinstance(_master, NotebookTab) or _isinstance(_master, "Canvas") or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             doubbleVar = _tk.DoubleVar(_master._get())
             self._data = {"master":_master,  "widget":_tk.Scale(_master._get()), "var":doubbleVar, "init":{"variable":doubbleVar, "from_":from_, "to":to, "orient":orient.value if hasattr(orient, "value") else orient}}
@@ -1794,7 +1784,6 @@ class Text(_LockableWidget):
     Colors and font can be changed individually.
     """
     def __init__(self, _master, group=None, readOnly=False, forceScroll=False, scrollAble=False):
-        self.getContent = self.getText
         if _isinstance(_master, "Tk") or isinstance(_master, NotebookTab) or _isinstance(_master, "Canvas") or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             self._data = {"master": _master,  "widget": _ScrolledText(_master._get()) if scrollAble else _tk.Text(_master._get()), "forceScroll":forceScroll, "tagCounter":0, "scrollable":scrollAble}
             self._setReadOnly(readOnly)
@@ -2543,7 +2532,6 @@ class ContextMenu(Widget):
             i.create()
 class NotebookTab(Widget):
     def __init__(self, _master, notebook=None, name=None, group=None):
-        self.setTabName = self.setText
         if _isinstance(_master, "Tk") or isinstance(_master, NotebookTab) or _isinstance(_master, "Canvas") or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
             self._data = {"master": notebook, "widget": _tk.Frame(notebook._get()), "tabWidget": notebook, "tabId": None, "name":name}
             notebook._get().add(self._data["widget"], text=name)
