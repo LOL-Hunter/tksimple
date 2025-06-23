@@ -1,10 +1,11 @@
 from threading import Thread
+from types import FunctionType, MethodType
 from time import time, sleep
 import tkinter as _tk
 import tkinter.font as _font
 import tkinter.ttk as _ttk
 from random import randint as _randint
-from typing import Union
+from typing import Union, Callable
 
 from .const import *
 
@@ -15,7 +16,7 @@ class Font:
     def __init__(self, size:int=10, family:FontType=FontType.ARIAL, weight:bool=False, italic:bool=False, underline:bool=False, overstrike:bool=False):
         self._data = {
             "size":size,
-            "family":(family.value if hasattr(family, "value") else family),
+            "family":remEnum(family),
             "weight":'bold' if weight else 'normal',
             "slant":'italic' if italic else'roman',
             "underline":underline,
@@ -28,7 +29,7 @@ class Font:
         self._state = False
         return self
     def setFontType(self, family:Union[FontType, str]):
-        self._data["family"] = family.value if hasattr(family, "value") else family,
+        self._data["family"] = remEnum(family),
         self._state = False
         return self
     def setWeight(self, w:bool=True):
@@ -55,21 +56,17 @@ class Font:
         if not self._state:
             self.updateFont()
         return self._font
-def _getAllChildWidgets(widget):
-    """
-    @TODO REMOVED widget gets added to its child wigets many wrong
-    @param widget:
-    @return:
-    """
-    ch = []
-    def point(_widget):
-        for cw in _widget["childWidgets"].values():
-            ch.append(cw)
-            point(cw)
-    point(widget)
-    return ch
-def _isinstance(cls, *name:str):
+def remEnum(val):
+    return val.value if hasattr(val, "value") else val
+def ifIsNone(valA, valB):
+    return valA if valA is not None else valB
+def _isinstanceAny(cls, *names):
+    for name in names:
+        if _isinstance(cls, name): return True
+    return False
+def _isinstance(cls, name):
     if cls is None: return False
+    if type(name) is not str: return isinstance(cls, name)
     if cls.__class__.__name__ in name: return True
     clazz = cls.__class__.__base__
     classList = [clazz.__name__]
@@ -78,20 +75,42 @@ def _isinstance(cls, *name:str):
         if clazz is None: return False
         if clazz is object: break
         classList.append(clazz.__name__)
-    return any([_name in classList for _name in name])
+    return name in classList
 def _lockable(func):
     """
     Decorator for locking Widgets which can be disabled.
     """
+    disableArgs = _checkMethod(func, mustHaveArgs=1)
     def _callable(*args):
         obj = args[0]
         if _isinstance(obj, "_LockableWidget"):
             obj._unlock()
-            retVal = func(*args)
+            try:
+                if disableArgs:
+                    retVal = func(*(args[:1]))
+                else:
+                    retVal = func(*args)
+            except Exception as e:
+                obj._lock()
+                raise e
             obj._lock()
             return retVal
         return func(*args)
     return _callable
+def _checkMethod(func, event=None, mustHaveArgs=0):
+    if func is None: return
+    if not hasattr(func, "__code__"): return
+    if event is not None and event["disableArgs"]: return
+
+    argCount:int = func.__code__.co_argcount
+
+    if isinstance(func, FunctionType) and argCount == mustHaveArgs:
+        if event is not None: event["disableArgs"] = True
+        return True
+    elif isinstance(func, MethodType) and argCount == mustHaveArgs+1:
+        if event is not None: event["disableArgs"] = True
+        return True
+    return False
 def enableRelativePlaceOptimization(runEvySec=2, runSecAftr=.2):
     global _WATCHER
     assert _WATCHER is None, "Relative Place Optimization cannot enabled twice!"
@@ -226,10 +245,7 @@ class WidgetGroup:
         @param w:
         @return:
         """
-        for method in dir(type(w)):
-            if method.startswith("__"): continue
-            if hasattr(self, method): continue
-            setattr(self, method, _WidgetGroupMethod(self, method))
+        if w is None: return
         self._widgets.append(w)
         self.executeCommands(w)
         if WIDGET_DELETE_DEBUG: print(f"+{len(self._widgets)} {type(w)}")
@@ -282,6 +298,17 @@ class WidgetGroup:
             for w in self._widgets: _run(w)
         else:
             _run(w)
+    def executeCommand(self, cmd:str, *args, ignoreErrors=False):
+        for w in self._widgets:
+            try:
+                if cmd == "@custom":
+                    args[0](w)
+                else:
+                    getattr(w, cmd)(*args)
+            except Exception as e:
+                if ignoreErrors: continue
+                raise Exception(f"Error while execute '{cmd}' command on [{len(self._widgets)}].\nType: {type(w)}, Error: {e}")
+
     def clearCommands(self):
         """
         Clears all registered Commands/Functions.
@@ -374,6 +401,13 @@ class State:
         return self._state == other
     def __ne__(self, other):
         return self._state != other
+class Toggler:
+    def __init__(self, func:Callable, initial=False):
+        self._func = func
+        self._state = initial
+    def __call__(self, *args, **kwargs):
+        self._state = not self._state
+        return self._func(self._state)
 class CustomRunnable:
     """
     Custom Runnable.
@@ -385,5 +419,3 @@ class CustomRunnable:
         self.command = command
     def __call__(self, *args, **kwargs):
         self.command(*self.args, **self.kwargs)
-
-

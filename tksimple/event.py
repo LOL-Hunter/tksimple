@@ -1,8 +1,7 @@
 from typing import Union, Callable
-from types import FunctionType, MethodType
 
 from .tkmath import Location2D
-from .util import _isinstance
+from .util import _isinstance, _checkMethod
 from .const import TKExceptions, Key, EventType, Mouse
 
 
@@ -139,7 +138,7 @@ class _EventRegistry:
     Used for debugging events.
     """
     def __init__(self, ins):
-        if _isinstance(ins, "Widget") or _isinstance(ins, "Tk") or _isinstance(ins, "CanvasObject"):
+        if _isinstance(ins, "_Widget") or _isinstance(ins, "Tk") or _isinstance(ins, "CanvasObject"):
             self._data = {"event":{}, "widget":ins} # event : { type_ : ( <type:_EventHandler>, [<type:Event>, ...] ) }
         elif isinstance(ins, dict):
             self._data = ins
@@ -238,7 +237,7 @@ class _EventHandler:
         event = None
         out = None
         if "widget" not in self.event._data.keys(): return #  event already dropped
-        for event in self.event["widget"]["registry"].getCallables(self.event["eventType"]): #TODO get only the output of the last called func. problem? maybe priorities
+        for event in self.event["widget"]._eventRegistry.getCallables(self.event["eventType"]): #TODO get only the output of the last called func. problem? maybe priorities
             func = event["func"]
             event["tkArgs"] = args
             if event["decryptValueFunc"] is not None:
@@ -264,8 +263,8 @@ class _EventHandler:
             if not len(event._data): return False # destroyed
             if event["afterTriggered"] is not None: event["afterTriggered"](event, out)
         # After all events are processed
-        if event["forceReturn"] is not None:
-            return event["forceReturn"]
+        if self.event["forceReturn"] is not None:
+            return self.event["forceReturn"]
     @staticmethod
     def setEventDebug(b:bool):
         _EventHandler.DEBUG = b
@@ -281,7 +280,7 @@ class _EventHandler:
         @param eventType: the event type to trigger the event
         @param args: arguments which are transferred to the function
         @param decryptValueFunc: this function gets called before the binded func was called
-        @param defaultArgs: this bool decides if the 'Event' instance or the mormal tkinter args are passed into the target function
+        @param defaultArgs: this bool decides if the 'Event' instance or the normal tkinter args are passed into the target function
         @param disableArgs: if this is True no arguments will be passed
         @return: None
         """
@@ -297,8 +296,8 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = eventType
         event["priority"] = priority
-        handler = obj["registry"].addEvent(event, eventType)
-        _EventHandler._checkMethod(func, event)
+        handler = obj._eventRegistry.addEvent(event, eventType)
+        _checkMethod(func, event)
         if handler is not None:
             try:
                 obj._get().bind(eventType, handler)
@@ -319,8 +318,8 @@ class _EventHandler:
         event["priority"] = priority
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = "cmd"
-        handler = obj["registry"].addEvent(event, "cmd")
-        _EventHandler._checkMethod(func, event)
+        handler = obj._eventRegistry.addEvent(event, "cmd")
+        _checkMethod(func, event)
         if not onlyGetRunnable:
             if handler is not None:
                 obj._get()[cmd] = handler
@@ -342,8 +341,8 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["forceReturn"] = True
         event["eventType"] = "vcmd"
-        handler = obj["registry"].addEvent(event, "vcmd")
-        _EventHandler._checkMethod(func, event)
+        handler = obj._eventRegistry.addEvent(event, "vcmd")
+        _checkMethod(func, event)
         if handler is not None:
             obj["widget"]["validate"] = type_
             obj["widget"]["validatecommand"] = (obj["master"]._get().register(handler), '%P')
@@ -360,8 +359,8 @@ class _EventHandler:
         event["priority"] = priority
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = "trace"
-        handler = obj["registry"].addEvent(event, "trace")
-        _EventHandler._checkMethod(func, event)
+        handler = obj._eventRegistry.addEvent(event, "trace")
+        _checkMethod(func, event)
         if handler is not None:
             var.trace("w", handler)
         event["handler"] = _EventHandler(event)
@@ -378,8 +377,8 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["afterTriggered"] = after
         event["eventType"] = "runnable"
-        _EventHandler._checkMethod(func, event)
-        handler = obj["registry"].addEvent(event, "runnable")
+        _checkMethod(func, event)
+        handler = obj._eventRegistry.addEvent(event, "runnable")
         if handler is not None:
             event["handler"] = handler
         else:
@@ -400,12 +399,12 @@ class _EventHandler:
         event["decryptValueFunc"] = decryptValueFunc
         event["afterTriggered"] = after
         event["eventType"] = eventType
-        handler = obj["registry"].addEvent(event, eventType)
+        handler = obj._eventRegistry.addEvent(event, eventType)
         eventType = eventType.value if hasattr(eventType, "value") else eventType
         event["handler"] = _EventHandler(event)
-        _EventHandler._checkMethod(func, event)
+        _checkMethod(func, event)
         if eventType == "[relative_update]" or eventType == "[relative_update_after]":
-            obj["placeRelData"]["handler"] = _EventHandler(event)
+            obj._relativePlaceData["handler"] = _EventHandler(event)
 
 
         return handler
@@ -423,21 +422,8 @@ class _EventHandler:
         event["priority"] = priority
         event["decryptValueFunc"] = decryptValueFunc
         event["eventType"] = eventType
-        handler = obj["registry"].addEvent(event, eventType)
-        _EventHandler._checkMethod(func, event)
+        handler = obj._eventRegistry.addEvent(event, eventType)
+        _checkMethod(func, event)
         if handler is not None:
             obj._get().tag_bind(id_, eventType, handler)
         event["handler"] = _EventHandler(event)
-    @staticmethod
-    def _checkMethod(func, event):
-        if func is None: return
-        if not hasattr(func, "__code__"): return
-        if event["disableArgs"]: return
-
-        argCount:int = func.__code__.co_argcount
-        varNames:(str,) = func.__code__.co_varnames
-
-        if isinstance(func, FunctionType) and argCount == 0:
-            event["disableArgs"] = True
-        elif isinstance(func, MethodType) and argCount == 1:
-            event["disableArgs"] = True

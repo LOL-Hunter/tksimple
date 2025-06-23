@@ -1,31 +1,30 @@
-from webbrowser import open as openURL
 import tkinter as _tk
 import tkinter.dnd as _dnd
+import tkinter.ttk as _ttk
 from datetime import datetime as _date
 
-from .window import *
+
 from .widget import *
+from .widget import _Widget
 from .draw import Canvas
-from .util import Font, State
-from .event import Event, _EventHandler, _EventRegistry
+from .util import Font, State, _isinstanceAny
+from .event import Event, _EventHandler
 from .tkmath import _map
 
 class HyperLinkLabel(Label):
     """
     Label for displaying URL.
-    CLickable to open URL.
+    Clickable to open URL.
     """
-    def __init__(self, master, group=None, url=None):
+    def __init__(self, master, group=None):
         super().__init__(master, group)
         self._hook = None
         self._hoverText = None
         self._hoverFont = None
         self._hoverColor = "black"
-        self._doOpenSite = True
         self.bind(self._onEnter, EventType.ENTER)
         self.bind(self._onLeave, EventType.LEAVE)
         self.resetClickedColor()
-        self.setURL(url)
         self.setFg(Color.hex("#0000EE"))
     def setURL(self, url:str):
         """
@@ -74,18 +73,12 @@ class HyperLinkLabel(Label):
         @param disableArgs: if True no args gets passed.
         @return:
         """
-        if cmd is None: return self
-        self._hook = cmd
-        self._doOpenSite = openWebPage
         _EventHandler._registerNewEvent(self, func=self._openWebsite, eventType=EventType.LEFT_CLICK, priority=priority, args=args, disableArgs=disableArgs, defaultArgs=defaultArgs)
         return self
-    def _openWebsite(self, e):
+    def _openWebsite(self, *args):
         if self._hook is not None:
-            self._hook(e)
-        if e["setCanceled"]: return
+            self._hook(*args)
         self.setClickedColor()
-        if self._doOpenSite and self._url is not None:
-            openURL(self._url)
     def _onEnter(self):
         if self._hoverText is not None and self._hoverFont is not None:
             self.setText(self._url)
@@ -102,16 +95,20 @@ class HyperLinkLabel(Label):
         self.setText(self._hoverText)
         self.setFont(self._hoverFont)
         self.setFg(self._hoverColor)
-class PDFViewer(Widget):
+class PDFViewer(_Widget):
     def __init__(self, _master, path, group=None):
+        raise NotImplemented() # TODO implement
         from tkPDFViewer import tkPDFViewer as pdf
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            viewer = pdf.ShowPdf()
-            self._data = {"master": _master, "widget": viewer.pdf_view(_master._get(), 200, 200, path), "init": {}}
-        else:
+
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
-        super().__init__(self, self._data, group)
-class MatPlotLibFigure(Widget):
+
+        super().__init__(child=self,
+                         widget=viewer.pdf_view(_master._get(), 200, 200, path),
+                         master=_master,
+                         group=group)
+        viewer = pdf.ShowPdf()
+class MatPlotLibFigure(_Widget):
     """
     Widget:
     Use this widget to display plots from matplotlib library.
@@ -119,50 +116,49 @@ class MatPlotLibFigure(Widget):
     Pass the Figure instance from matplotlib.
     """
     def __init__(self, _master, fig, group=None, toolBar=False):
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
+            raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
+
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            master = _master
-            init = {}
-            if toolBar:
-                init = {"func":self._bind}
-                master = Frame(_master)
-                master.setBg("green")
 
-            figureWidget = FigureCanvasTkAgg(fig, master._get())
-            figureWidget.draw()
+        self._figureWidget = FigureCanvasTkAgg(fig, _master._get())
+        self._figureWidget.draw()
 
-            if toolBar:
-                toolbar = NavigationToolbar2Tk(figureWidget, master._get(), pack_toolbar=False)
-                toolbar.update()
+        if toolBar:
+            widget = Frame(_master)
+            toolbar = NavigationToolbar2Tk(self._figureWidget, _master._get(), pack_toolbar=False)
+            toolbar.update()
 
-                self.wwidget_plot = Widget(None, {"master":master, "widget":figureWidget.get_tk_widget()}, None)
-                self.wwidget_settings = Widget(None, {"master":master, "widget":toolbar}, None)
-                self.wwidget_plot.placeRelative(changeHeight=-30)
-                self.wwidget_settings.placeRelative(stickDown=True, fixHeight=30)
-
-                master = master._get()
-            else:
-                master = figureWidget.get_tk_widget()
-
-            self._data = {"master": _master, "widget": master, "figureWidget":figureWidget, "init": init}
+            self.wwidget_plot = _Widget(child=None,
+                                        widget=self._figureWidget.get_tk_widget(),
+                                        master=_master,
+                                        group=None)
+            self.wwidget_settings = _Widget(child=None,
+                                            widget=toolbar,
+                                            master=_master,
+                                            group=None)
+            self.wwidget_plot.placeRelative(changeHeight=-30)
+            self.wwidget_settings.placeRelative(stickDown=True, fixHeight=30)
         else:
-            raise TKExceptions.InvalidWidgetTypeException(
-                "_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(
-                    _master.__class__.__name__))
-        super().__init__(self, self._data, group)
+            widget = self._figureWidget.get_tk_widget()
+
+        super().__init__(child=self,
+                         widget=widget._get(),
+                         master=_master,
+                         group=group)
+        self.bind(self._updatePlace, EventType.CUSTOM_RELATIVE_UPDATE)
+
     def _updatePlace(self, e):
         self.wwidget_plot.updateRelativePlace()
         self.wwidget_settings.updateRelativePlace()
-    def _bind(self):
-        self.bind(self._updatePlace, EventType.CUSTOM_RELATIVE_UPDATE)
     def draw(self):
         """
         Draws the figure.
         @return:
         """
-        self["figureWidget"].draw()
+        self._figureWidget.draw()
         return self
-class Calendar(Widget):
+class Calendar(_Widget):
     """
     Widget:
     This widget displays a calendar to select day and year.
@@ -170,14 +166,17 @@ class Calendar(Widget):
     To use this widget the 'tkcalencar' library have to be installed.
     """
     def __init__(self, _master, group=None):
-        import tkcalendar as cal
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master, "widget": cal.Calendar(_master._get()), "init": {}}
-        else:
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
-        super().__init__(self, self._data, group)
+
+        import tkcalendar as cal
+
+        super().__init__(child=self,
+                         widget=cal.Calendar(_master._get()),
+                         master=_master,
+                         group=group)
     def _decryptEvent(self, args, event):
-        return self["widget"].get_date()
+        return self._widget.get_date()
     def setDate(self, d, m, y):
         """
         Sets the date.
@@ -224,7 +223,7 @@ class Calendar(Widget):
         Example: '1/1/20'
         @return:
         """
-        return self["widget"].get_date()
+        return self._widget.get_date()
     def onCalendarSelectEvent(self, func, args:list = None, priority:int=0, defaultArgs=False, disableArgs=False):
         """
         Bind on date select event to this widget. Runs given function on trigger.
@@ -237,7 +236,7 @@ class Calendar(Widget):
         @return:
         """
         _EventHandler._registerNewEvent(self, func, EventType.customEvent("<<CalendarSelected>>"), args, priority, decryptValueFunc=self._decryptEvent, defaultArgs=defaultArgs, disableArgs=disableArgs)
-class DropdownCalendar(Widget):
+class DropdownCalendar(_Widget):
     """
     Widget:
     This widget displays an Entry like folds out calendar to select day and year.
@@ -245,14 +244,17 @@ class DropdownCalendar(Widget):
     To use this widget the 'tkcalencar' library have to be installed.
     """
     def __init__(self, _master, group=None):
-        import tkcalendar as cal
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master": _master, "widget": cal.DateEntry(_master._get()), "init": {}}
-        else:
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
             raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
-        super().__init__(self, self._data, group)
+
+        import tkcalendar as cal
+
+        super().__init__(child=self,
+                         widget=cal.DateEntry(_master._get()),
+                         master=_master,
+                         group=group)
     def _decryptEvent(self, args, event):
-        return self["widget"].get_date()
+        return self._widget.get_date()
     def setDate(self, d, m, y):
         """
         Sets the date.
@@ -299,7 +301,7 @@ class DropdownCalendar(Widget):
         Example: '1/1/20'
         @return:
         """
-        return self["widget"].get_date()
+        return self._widget.get_date()
     def onCalendarSelectEvent(self, func, args: list = None, priority: int = 0, defaultArgs=False, disableArgs=False):
         """
         Bind on date select event to this widget. Runs given function on trigger.
@@ -312,31 +314,42 @@ class DropdownCalendar(Widget):
         @return:
         """
         _EventHandler._registerNewEvent(self, func, EventType.customEvent("<<CalendarSelected>>"), args, priority, decryptValueFunc=self._decryptEvent, defaultArgs=defaultArgs, disableArgs=disableArgs)
-class OnOffButton(Widget):
+class OnOffButton(_Widget):
     """
     Widget:
     This is a custom Widget.
     This widget represents a Button wich can be toggled on and off.
     """
-    def __init__(self, _master, group=None, text="", default=False, colorsActive=True, reliefActive=False):
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            self._data = {"master":_master,  "text":text, "widget":_tk.Button(_master._get()), "value":default, "relief":reliefActive, "color":colorsActive, "onText":None, "offText":None, "init":{"text":text}}
-            if default:
-                if colorsActive: self._data["init"]["bg"] = Color.GREEN.value
-                if reliefActive: self._data["init"]["relief"] = Style.SUNKEN.value
-            else:
-                if colorsActive: self._data["init"]["bg"] = Color.RED.value
-                if reliefActive: self._data["init"]["relief"] = Style.SUNKEN.value
+    def __init__(self, _master, group=None, default=False, colorsActive=True, reliefActive=False):
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
+            raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
+
+        self._value = default
+        self._isRelief = reliefActive
+        self._isColors = colorsActive
+        self._onText = None
+
+        init = {}
+
+        if default:
+            if colorsActive: init["bg"] = Color.GREEN.value
+            if reliefActive: init["relief"] = Style.SUNKEN.value
         else:
-            raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
-        super().__init__(self, self._data, group)
+            if colorsActive: init["bg"] = Color.RED.value
+            if reliefActive: init["relief"] = Style.SUNKEN.value
+
+        super().__init__(child=self,
+                         widget=_tk.Button(_master._get()),
+                         master=_master,
+                         group=group,
+                         init=init)
     def setValue(self, v:bool):
         """
         Set the state (on/off) as bool.
         @param v:
         @return:
         """
-        self["value"] = bool(v)
+        self._value = bool(v)
         self._update()
         return self
     def getValue(self)->bool:
@@ -345,13 +358,13 @@ class OnOffButton(Widget):
 
         @return:
         """
-        return self["value"]
+        return self._value
     def setOn(self):
         """
         Set state to True.
         @return:
         """
-        self["value"] = True
+        self._value = True
         self._update()
         return self
     def setOff(self):
@@ -359,7 +372,7 @@ class OnOffButton(Widget):
         Set state to False.
         @return:
         """
-        self["value"] = False
+        self._value = False
         self._update()
         return self
     def setOnText(self, text:Union[str, None]):
@@ -368,7 +381,7 @@ class OnOffButton(Widget):
         @param text:
         @return:
         """
-        self["onText"] = str(text)
+        self._onText = str(text)
         self._update()
         return self
     def setOffText(self, text:Union[str, None]):
@@ -377,7 +390,7 @@ class OnOffButton(Widget):
         @param text:
         @return:
         """
-        self["offText"] = str(text)
+        self._offText = str(text)
         return self
     def setCommand(self, cmd, args:list=None, priority:int=0, disableArgs=False, defaultArgs=False):
         """
@@ -390,27 +403,27 @@ class OnOffButton(Widget):
         @param disableArgs: if True no args gets passed.
         @return:
         """
-        self["command"] = _EventHandler._getNewEventRunnable(self, cmd, args, priority)
+        self._command = _EventHandler._getNewEventRunnable(self, cmd, args, priority)
         _EventHandler._registerNewCommand(self, self._press, args, priority)
         self._update()
         return self
     def _press(self, e):
-        self["value"] = not self["value"]
+        self._value = not self._value
         self._update()
-        func = self["command"]
-        func["value"] = self["value"]
+        func = self._command
+        func["value"] = self._value
         if func is not None:
             func()
     def _update(self):
-        if self["value"]:
-            if self["onText"] is not None: self.setText(self["onText"])
-            if self["color"]: self.setBg(Color.GREEN)
-            if self["relief"]: self.setStyle(Style.SUNKEN)
+        if self._value:
+            if self._onText is not None: self.setText(self._onText)
+            if self._isColors: self.setBg(Color.GREEN)
+            if self._isRelief: self.setStyle(Style.SUNKEN)
         else:
-            if self["offText"] is not None: self.setText(self["offText"])
-            if self["color"]: self.setBg(Color.RED)
-            if self["relief"]: self.setStyle(Style.RAISED)
-        return self["value"]
+            if self._offText is not None: self.setText(self._offText)
+            if self._isColors: self.setBg(Color.RED)
+            if self._isRelief: self.setStyle(Style.RAISED)
+        return self._value
 class TextEntry(LabelFrame):
     """
     Widget:
@@ -419,34 +432,17 @@ class TextEntry(LabelFrame):
     Used to give the user a hint, what to write in the Entry.
     Important: First set the Text and THEN place the widget.
     """
-    def __init__(self, _master, group=None, text=""):
-        super().__init__(_master, None)
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            _data = {"value":"", "label":Label(self, group), "entry":Entry(self, group)}
-            _data["label"].setText(text)
-            self._addData(_data)
-        else:
-            raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
-        #if group is not None:
-        #    group.add(self._ins)
-    def bind(self, func:callable, event: Union[EventType, Key, Mouse, str], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
-        """
-        Binds a specific event to the Widget. Runs given function on trigger.
-
-        @param func: function get called on trigger
-        @param event: Event type: EventType _Enum or default tkinter event as string.
-        @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, it's possible to set priorities.
-        @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
-        @param disableArgs: if True no args gets passed.
-        @return:
-        """
-        if event == "CANCEL": return
-        _EventHandler._registerNewEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
-        return self
+    def __init__(self, _master, group=None):
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
+            raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
+        
+        super().__init__(_master, group)
+        
+        self._entry = Entry(self, group)
+        self._label = Label(self, group)
     def updatePlace(self):
-        self._data["label"]._get().grid(row=0, column=0)
-        self._data["entry"]._get().grid(row=0, column=1, sticky=Anchor.RIGHT.value)
+        self._label._get().grid(row=0, column=0)
+        self._entry._get().grid(row=0, column=1, sticky=Anchor.RIGHT.value)
     def getValue(self)->str:
         """
         Returns the Entry value.
@@ -476,14 +472,14 @@ class TextEntry(LabelFrame):
         Used for further configuration.
         @return:
         """
-        return self._data["entry"]
+        return self._entry
     def getLabel(self)->Label:
         """
         Returns the sub Label.
         Used for further configuration.
         @return:
         """
-        return self._data["label"]
+        return self._label
     def clear(self):
         """
         Clears the Entry.
@@ -516,8 +512,8 @@ class TextEntry(LabelFrame):
         @return:
         """
         offset = 5
-        self._data["label"].place(0, 0)
-        labelWidth = self._data["label"].getWidth()
+        self._label.place(0, 0)
+        labelWidth = self._label.getWidth()
         if entryStartX is not None: labelWidth = entryStartX
         if width is None:
             width = labelWidth+100
@@ -525,15 +521,15 @@ class TextEntry(LabelFrame):
         else:
             entryWidth = width - labelWidth
         super().place(x, y, width, height)
-        self._data["label"].place(0, 0, labelWidth, height-offset)
-        self._data["entry"].place(labelWidth, 0, entryWidth-offset, height-offset)
+        self._label.place(0, 0, labelWidth, height-offset)
+        self._entry.place(labelWidth, 0, entryWidth-offset, height-offset)
         return self
-    def placeRelative(self, fixX=None, fixY=None, fixWidth=None, fixHeight=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0, nextTo=None, updateOnResize=True):
+    def placeRelative(self, fixX=None, fixY=None, fixWidth=None, fixHeight=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, center=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0):
         assert fixWidth is not None and fixHeight is not None, "fixWidth and fixHeight must be defined!"
         x = fixX if fixX is not None else 0
         y = fixY if fixY is not None else 0
         self.place(x, y, fixWidth, fixHeight)
-        super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight, nextTo, updateOnResize)
+        super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight)
         return self
     def setFg(self, col:Union[Color, str]):
         self.getEntry().setFg(col)
@@ -543,9 +539,7 @@ class TextEntry(LabelFrame):
         self.getEntry().setBg(col)
         self.getLabel().setBg(col)
         return self
-    def _get(self):
-        return self._data["widget"]
-class TextDropdownMenu(Widget):
+class TextDropdownMenu(LabelFrame):
     """
     Widget:
     This is a Custom Widget.
@@ -553,32 +547,14 @@ class TextDropdownMenu(Widget):
     Used to give the user a hint, what to write/select in the DropdownMenu.
     Important: First set the Text and THEN place the widget.
     """
-    def __init__(self, _master, group=None, text=""):
-        if isinstance(_master, Tk) or isinstance(_master, NotebookTab) or isinstance(_master, Canvas) or isinstance(_master, Frame) or isinstance(_master, LabelFrame):
-            widg = LabelFrame(_master)
-            self._data = {"master":_master,  "widget":widg, "value":"", "dropdownMenu":DropdownMenu(widg), "label":Label(widg)}
-            self._data["widget"]._get().grid(padx=10, pady=10)
-            self._data["label"].setText(text)
-            self._data["label"]._get().grid(row=0, column=0)
-            self._data["dropdownMenu"]._get().grid(row=0, column=1)
-        else:
-            raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+", Frame or Tk instance not: "+str(_master.__class__.__name__))
-        super().__init__(self, self._data, group)
-    def bind(self, func, event: Union[EventType, Key, Mouse], args:list=None, priority:int=0, defaultArgs=False, disableArgs=False):
-        """
-        Binds a specific event to the Widget. Runs given function on trigger.
+    def __init__(self, _master, group=None):
+        if not _isinstanceAny(_master, Tk, NotebookTab, Canvas, Frame, LabelFrame):
+            raise TKExceptions.InvalidWidgetTypeException("_master must be " + str(self.__class__.__name__) + ", Frame or Tk instance not: " + str(_master.__class__.__name__))
 
-        @param func: function get called on trigger
-        @param event:  Event type: EventType _Enum or default tkinter event as string.
-        @param args: Additional arguments as List.
-        @param priority: If several equal events are bound, it's possible to set priorities.
-        @param defaultArgs: if True the default tkinter gets passed in bound function instead of Event-instance.
-        @param disableArgs: if True no args gets passed.
-        @return:
-        """
-        if event == "CANCEL": return
-        _EventHandler._registerNewEvent(self, func, event, args, priority, defaultArgs=defaultArgs, disableArgs=disableArgs)
-        return self
+        super().__init__(_master, group)
+
+        self._dropdown = DropdownMenu(self, group)
+        self._label = Label(self, group)
     def getValue(self)->str:
         """
         Returns Dropdownmenu content.
@@ -593,20 +569,20 @@ class TextDropdownMenu(Widget):
         """
         self.getDropdownMenu().setValue(str(v))
         return self
-    def getLabel(self):
+    def getLabel(self)->Label:
         """
         Returns the sub Label.
         Used for further configuration.
         @return:
         """
-        return Label(self["label"])
-    def getDropdownMenu(self):
+        return self._label
+    def getDropdownMenu(self)->DropdownMenu:
         """
         Returns the sub DropdownMenu.
         Used for further configuration.
         @return:
         """
-        return DropdownMenu(self["dropdownMenu"])
+        return self._dropdown
     def setDisabled(self):
         """
         Disables the DropdownMenu.
@@ -621,8 +597,6 @@ class TextDropdownMenu(Widget):
         """
         self.getDropdownMenu().setEnabled()
         return self
-    def _get(self):
-        return self["widget"]._get()
 class _DndHandler:
     def __init__(self, canvas, _id, widget, widgetCreator):
         self.canvas = canvas
@@ -652,8 +626,8 @@ class DndCanvas(Canvas):
         canvas = self._get()
         canvas.dnd_accept = self._onDndWidget
         self._outlineID = None
-        self["hide_widg_on_drag"] = False
-        self["drag_enabled"] = True
+        self._hideWidgetOnDrag = False
+        self._dragEnabled = True
         # register "private" methods
         setattr(self, "dnd_accept", self._onDndWidget)
         setattr(self, "dnd_enter", self._onDndEnter)
@@ -661,7 +635,7 @@ class DndCanvas(Canvas):
         setattr(self, "dnd_leave", self._onDndLeave)
         setattr(self, "dnd_commit", self._onDndCommit)
     def _onDndWidget(self, dndHandl, event):
-        return self if self["drag_enabled"] else None
+        return self if self._dragEnabled else None
     def _onDndEnter(self, dndHandl, event):
         self.setFocus()
         rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
@@ -671,48 +645,44 @@ class DndCanvas(Canvas):
             Location2D(x1, y1),
             Location2D(x2, y2)
         )
-        self._outlineID = self["widget"].create_rectangle(rsx, rsy, rsx+canvasRect.getWidth(), rsy+canvasRect.getHeight())
+        self._outlineID = self._widget.create_rectangle(rsx, rsy, rsx+canvasRect.getWidth(), rsy+canvasRect.getHeight())
         self._onDndMotion(dndHandl, event)
     def _onDndMotion(self, dndHandl, event):
-        if self["hide_widg_on_drag"]: dndHandl.canvas._get().itemconfigure(dndHandl.id, state="hidden")
+        if self._hideWidgetOnDrag: dndHandl.canvas._get().itemconfigure(dndHandl.id, state="hidden")
         rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
-        x1, y1, x2, y2 = self["widget"].bbox(self._outlineID)  # WICHTIG .id impl
-        self["widget"].move(self._outlineID, rsx-x1, rsy-y1)
+        x1, y1, x2, y2 = self._widget.bbox(self._outlineID)  # WICHTIG .id impl
+        self._widget.move(self._outlineID, rsx-x1, rsy-y1)
     def _onDndLeave(self, dndHandl, event):
         self._getTkMaster().setFocus()
-        self["widget"].delete(self._outlineID)
-        self["widget"]["dnd_canvas"] = None
+        self._widget.delete(self._outlineID)
+        self._widget.dnd_canvas = None
         self._outlineID = None
     def _onDndCommit(self, dndHandl, event):
         self._onDndLeave(dndHandl, event)
         rsx, rsy = dndHandl.getWidgetCursorPos(event, self)
         self.attachWidgetCreator(dndHandl.widget, rsx, rsy)
-
     def disableDrag(self):
-        self["drag_enabled"] = False
+        self._dragEnabled = False
     def enableDrag(self):
-        self["drag_enabled"] = True
+        self._dragEnabled = True
     def setWidgetHiddenWhileDrag(self, b:bool=True):
-        self["hide_widg_on_drag"] = bool(b)
+        self._hideWidgetOnDrag = bool(b)
         return self
-
-    def attachWidget(self, widget:Widget, x=0, y=0, width=None, height=None):
+    def attachWidget(self, widget:_Widget, x=0, y=0, width=None, height=None):
         """
         Attaches a widget to be dragged on this canvas.
         Only on this canvas. If multi-canvas dragging is needed use 'DndCanvas.attachWidgetCreator' method.
         """
-        if "dnd_canvas" not in widget._data.keys():
-            widget["dnd_canvas"] = None
-        if widget["dnd_canvas"] is None: # register
+        if hasattr(widget, "dnd_canvas"):
+            setattr(widget, "dnd_canvas", None)
+        if widget.dnd_canvas is None: # register
             _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
-            widget["dnd_canvas"] = _DndHandler(self, _id, widget, None)
-            widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
+            widget._dnd_canvas = _DndHandler(self, _id, widget, None)
+            widget.bind(widget._dnd_canvas.press, "<ButtonPress>", priority=10)
         else:
-            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
+            widget.dnd_canvas.canvas._get().delete(widget.dnd_canvas.id)
             _id = self._get().create_window(x, y, width=width, height=height, window=widget._get(), anchor="nw")
-            widget["dnd_canvas"].id = _id
-
-
+            widget.dnd_canvas.id = _id
     def attachWidgetCreator(self, widgetCreator:Callable, x=0, y=0):
         """
         Attaches a function which creates a widget.
@@ -731,79 +701,97 @@ class DndCanvas(Canvas):
         @param y: y position of widget.
         @return:
         """
-        if isinstance(widgetCreator, Widget):
+        if isinstance(widgetCreator, _Widget):
             _widget = widgetCreator
-            widgetCreator = widgetCreator["dnd_canvas"].widgetCreator
+            widgetCreator = widgetCreator.dnd_canvas.widgetCreator
             self.detachWidget(_widget)
         widget = widgetCreator(self)
         # check and register variables
         if "dnd_canvas" not in widget._data.keys():
-            widget["dnd_canvas"] = None
+            widget.dnd_canvas = None
         # check if already registered to this canvas
-        if widget["dnd_canvas"] is not None:
-            if widget["dnd_canvas"].widget._getID() == self._getID():
+        if widget.dnd_canvas is not None:
+            if hash(widget.dnd_canvas.widget) == hash(self):
                 return
             self.detachWidget(widget)
         _id = self._get().create_window(x, y, window=widget._get(), anchor="nw")
-        widget["dnd_canvas"] = _DndHandler(self, _id, widget, widgetCreator)
-        widget.bind(widget["dnd_canvas"].press, "<ButtonPress>", priority=10)
-    def detachWidget(self, widget:Widget):
-        if "dnd_canvas" not in widget._data.keys():
-            widget["dnd_canvas"] = None
-        if widget["dnd_canvas"] is not None:
-            widget["dnd_canvas"].canvas._get().delete(widget["dnd_canvas"].id)
-            widget["registry"].unregisterType("<ButtonPress>")
-            print("destroy")
+        widget.dnd_canvas = _DndHandler(self, _id, widget, widgetCreator)
+        widget.bind(widget.dnd_canvas.press, "<ButtonPress>", priority=10)
+    def detachWidget(self, widget:_Widget):
+        if hasattr(widget, "dnd_canvas"):
+            setattr(widget, "dnd_canvas", None)
+        if widget.dnd_canvas is not None:
+            widget.dnd_canvas.canvas._get().delete(widget.dnd_canvas.id)
+            widget._eventRegistry.unregisterType("<ButtonPress>")
             widget._get().destroy()
 class MenuPage(Frame):
     def __init__(self, master, group=None):
         super().__init__(master, group)
-        self._menuData = {
-            "history":[self],
-            "master":self["tkMaster"],
-            "active":False
-        }
+        self._master = self.getParentWindow()
+        self._history = [self]
+        self._active = False
     def __str__(self):
         return type(self).__name__
     def openMenuPage(self, **kwargs):
         # remove other active Page
-        self._menuData["active"] = True
+        self._active = True
         self.onShow(**kwargs)
-        self._menuData["master"].updateDynamicWidgets()
+        self.getParentWindow().updateDynamicWidgets()
     def openNextMenuPage(self, mp, **kwargs):
-        self._menuData["active"] = False
+        self._active = False
         self.onHide()
         self.placeForget()
-        history = self._menuData["history"].copy()
+        history = self._history.copy()
         history.append(mp)
-        mp._menuData["history"] = history
-        mp._menuData["active"] = True
+        mp._history = history
+        mp._active = True
         mp.onShow(**kwargs)
-        self._menuData["master"].updateDynamicWidgets()
+        self.getParentWindow().updateDynamicWidgets()
     def openLastMenuPage(self):
-        if len(self._menuData) > 1:
-            self.onHide()
-            self.placeForget()
-            newHistory = self._menuData["history"].copy()[:-1] # remove self
-            history = newHistory[-1] # get new "self" -> last item
-            history._menuData["history"] = newHistory # set hist to new instance
-            history.onShow() # show new instance
-            history._menuData["active"] = True
-            self._menuData["master"].updateDynamicWidgets()
+        self.onHide()
+        self.placeForget()
+        newHistory = self._history.copy()[:-1] # remove self
+        history = newHistory[-1] # get new "self" -> last item
+        history._history = newHistory # set hist to new instance
+        history.onShow() # show new instance
+        history._active = True
+        self.getParentWindow().updateDynamicWidgets()
     def _onShow(self, **kwargs):
-        self._menuData["active"] = True
+        self._active = True
         self.onShow(**kwargs)
     def isActive(self):
-        return self._menuData["active"]
+        return self._active
     def onShow(self, **kwargs):
         pass
     def onHide(self):
         pass
     def openHomePage(self, mainPage):
         assert isinstance(mainPage, MenuPage), "Please use 'MenuPage' instance!"
-        mainPage._menuData["history"] = [mainPage]
+        mainPage._history = [mainPage]
         self.placeForget()
         mainPage.openMenuPage()
+class ScrollableText(Text):
+    def __init__(self, _master, group=None, readOnly=False):
+        self._frame = Frame(_master)
+        self._frame.setBg("red")
+        self._scrollBar = ScrollBar(self._frame, autoPlace=False)
+        self._scrollBar._get().pack(side=_tk.RIGHT, fill=_tk.Y)
+
+        super().__init__(self._frame,
+                         group=group,
+                         readOnly=readOnly)
+
+        self._get()["yscrollcommand"] = self._scrollBar.set
+        self._get().pack(side=_tk.LEFT, fill=_tk.BOTH, expand=True)
+        self._scrollBar._get()['command'] = self._get().yview
+    def placeRelative(self, fixX:int=None, fixY:int=None, fixWidth:int=None, fixHeight:int=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, center=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0):
+        self._frame.placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, center, changeX, changeY, changeWidth, changeHeight)
+    def place(self, x=None, y=None, width=None, height=None, anchor:Anchor=Anchor.UP_LEFT):
+        self._frame.place(x, y, width, height, anchor)
+    def grid(self, row=0, column=0):
+        self._frame.grid(row, column)
+    def getScrollBar(self)->ScrollBar:
+        return self._scrollBar
 class ScrollableFrame(Frame):
     def __init__(self, _master, innerFrameHeight:int, innerFrameWidth:int=None, group=None):
         self._hasReturnedMaster = False
@@ -943,4 +931,4 @@ class ScrollableFrame(Frame):
             self._hasReturnedMaster = False
             return self._outerFrame._get()
         return super()._get()
-
+class ClosableNotebook():pass

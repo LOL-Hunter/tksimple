@@ -270,3 +270,27 @@ class EventType(_Enum):
         if k3 is not None and not isinstance(k2, FunctionKey): raise ValueError("if k3 is not None then k2 must be instance of 'FunctionKey'!")
         return "<"+(k1.value if hasattr(k1, "value") else k1)+"-"+(k2.value if hasattr(k2, "value") else k2)+("-"+(k3.value if hasattr(k3, "value") else k3) if k3 is not None else "")+">"
 
+_ALLOWED_MENU_PROPERTIES = ['accelerator',
+                            'activebackground',
+                            'activeforeground',
+                            'background',
+                            'bitmap',
+                            'columnbreak',
+                            'command',
+                            'compound',
+                            'font',
+                            'fg',
+                            'bg',
+                            'hidemargin',
+                            'image',
+                            'label',
+                            'menu',
+                            'offvalue',
+                            'onvalue',
+                            'selectcolor',
+                            'selectimage',
+                            'state',
+                            'underline',
+                            'value',
+                            'variable']
+

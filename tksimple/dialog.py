@@ -192,8 +192,8 @@ class SimpleDialog:
 
         Button(dialog, group).setText("Select").placeRelative(stickDown=True, fixHeight=30, xOffsetRight=50).setCommand(select)
         canc = Button(dialog, group).setText("Cancel").placeRelative(stickDown=True, stickRight=True, fixHeight=30, xOffsetRight=50).setCommand(cancel)
-        if forceToChoose: canc.disable()
-        dialog.show()
+        if forceToChoose: canc.setDisabled()
+        dialog.show(waitVisibility=False)
         while True:
             master.update()
             sleep(.1)
@@ -209,7 +209,7 @@ class SimpleDialog:
     def _dialog(d, master, **kwargs):
         if isinstance(master, Tk):
             if kwargs["title"] == "":
-                kwargs["title"] = master["title"]
+                kwargs["title"] = master._title
             return d(parent=master._get(), **kwargs)
         else:
             mas = Tk()
