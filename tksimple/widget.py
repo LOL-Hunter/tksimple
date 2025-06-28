@@ -1612,7 +1612,7 @@ class Scale(_Widget):
     Widget:
     Adds a Slider to set values from specified value range.
     """
-    def __init__(self, _master, group:WidgetGroup =None, from_=0, to=100, orient:Orient=Orient.HORIZONTAL):
+    def __init__(self, _master, group:WidgetGroup = None, from_=0, to=100, orient:Orient=Orient.HORIZONTAL):
         if not _isinstanceAny(_master, Tk, NotebookTab, "Canvas", Frame, LabelFrame):
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+" or Tk instance not: "+str(_master.__class__.__name__))
         
@@ -1717,7 +1717,7 @@ class Scale(_Widget):
         """
         _EventHandler._registerNewCommand(self, func, args, priority, decryptValueFunc=self._decryptValue)
         return self
-    def _decryptValue(self, a=None):
+    def _decryptValue(self, args, event):
         return self.getValue()
 class Progressbar(_Widget):
     """
