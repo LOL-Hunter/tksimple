@@ -667,7 +667,6 @@ class _ToolTip(_Widget):
     def _enter(self, e):
         self._schedule()
     def _leave(self, e):
-        print("leave")
         self._unschedule()
         self._hidetip()
     def _schedule(self):

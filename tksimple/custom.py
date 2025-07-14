@@ -121,33 +121,31 @@ class MatPlotLibFigure(_Widget):
 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-        self._figureWidget = FigureCanvasTkAgg(fig, _master._get())
+        self._frame = Frame(_master, group)
+
+        self._figureWidget = FigureCanvasTkAgg(fig, self._frame._get())
         self._figureWidget.draw()
 
         if toolBar:
-            widget = Frame(_master)
-            toolbar = NavigationToolbar2Tk(self._figureWidget, _master._get(), pack_toolbar=False)
+            toolbar = NavigationToolbar2Tk(self._figureWidget, self._frame._get(), pack_toolbar=False)
             toolbar.update()
 
             self.wwidget_plot = _Widget(child=None,
                                         widget=self._figureWidget.get_tk_widget(),
-                                        master=_master,
+                                        master=self._frame,
                                         group=None)
             self.wwidget_settings = _Widget(child=None,
                                             widget=toolbar,
-                                            master=_master,
+                                            master=self._frame,
                                             group=None)
             self.wwidget_plot.placeRelative(changeHeight=-30)
             self.wwidget_settings.placeRelative(stickDown=True, fixHeight=30)
-        else:
-            widget = self._figureWidget.get_tk_widget()
 
         super().__init__(child=self,
-                         widget=widget._get(),
+                         widget=self._frame._get(),
                          master=_master,
                          group=group)
         self.bind(self._updatePlace, EventType.CUSTOM_RELATIVE_UPDATE)
-
     def _updatePlace(self, e):
         self.wwidget_plot.updateRelativePlace()
         self.wwidget_settings.updateRelativePlace()
