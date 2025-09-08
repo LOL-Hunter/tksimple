@@ -678,6 +678,8 @@ class Dialog(Toplevel):
         self._get().grab_release()
         self._master.withdraw()
         self._get().transient()
+
+
     def show(self, waitVisibility=True):
         """
         Shows the dialog.

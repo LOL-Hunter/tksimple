@@ -468,13 +468,15 @@ class _Widget:
         Can be overwritten!
         @return:
         """
-        assert not self._destroyed, f"Widget {type(self)} {self._getID()} is already destroyed!"
+        assert not self._destroyed, f"Widget {type(self)} id={self._getID()} is already destroyed!"
         self._eventRegistry.unregisterAll() #TODO need?
         WidgetGroup.removeFromAll(self)
         if self._toolTip is not None:
             self._toolTip.destroy()
         if hasattr(self._master, "_childWidgets"):
             self._master._childWidgets.remove(self)
+        if self._get() is not None:
+            self._get().destroy()
         self._destroyed = True
         self._placed = False
         return self
@@ -603,8 +605,8 @@ class _LockableWidget(_Widget):
 
     def setEnabled(self):
         if not self._isDisabled: return
-        super()._setAttribute("state", self._unlockState if self._lockState is None else self._lockState) # "normal" if _lockstate is None else "readonly"
-        print(self._unlockState)
+        super()._setAttribute("state", self._unlockState if self._lockState == "disabled" else self._lockState) # "normal" if _lockstate is None else "readonly"
+        #print(self._unlockState)
         self._forceDisabled = False
         self._isDisabled = False
     def setDisabled(self):
@@ -1183,7 +1185,7 @@ class Entry(_LockableWidget):
     Widget:
     The Entry is used to ask single line text from the user.
     """
-    def __init__(self, _master, group:WidgetGroup =None, readOnly=False):
+    def __init__(self, _master, group:WidgetGroup=None, readOnly=False):
         if not _isinstanceAny(_master, Tk, NotebookTab, "Canvas", Frame, LabelFrame):
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+" or Tk instance not: "+str(_master.__class__.__name__))
 
@@ -2622,6 +2624,8 @@ class _SubMenu:
         return _d
     def _get(self):
         return self._widget
+    def destroy(self):
+        pass
 
 class NotebookTab(_ContainerWidget):
     def __init__(self, _master, title:str, group:WidgetGroup =None):

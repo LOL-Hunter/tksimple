@@ -13,11 +13,11 @@ from .const import *
 _WATCHER = None
 
 class Font:
-    def __init__(self, size:int=10, family:FontType=FontType.ARIAL, weight:bool=False, italic:bool=False, underline:bool=False, overstrike:bool=False):
+    def __init__(self, size:int=10, family:FontType=FontType.ARIAL, bold:bool=False, italic:bool=False, underline:bool=False, overstrike:bool=False):
         self._data = {
             "size":size,
             "family":remEnum(family),
-            "weight":'bold' if weight else 'normal',
+            "bold":'bold' if bold else 'normal',
             "slant":'italic' if italic else'roman',
             "underline":underline,
             "overstrike":overstrike
@@ -81,21 +81,21 @@ def _lockable(func):
     Decorator for locking Widgets which can be disabled.
     """
     disableArgs = _checkMethod(func, mustHaveArgs=1)
-    def _callable(*args):
+    def _callable(*args, **kwargs):
         obj = args[0]
         if _isinstance(obj, "_LockableWidget"):
             obj._unlock()
             try:
                 if disableArgs:
-                    retVal = func(*(args[:1]))
+                    retVal = func(*(args[:1]), **kwargs)
                 else:
-                    retVal = func(*args)
+                    retVal = func(*args, **kwargs)
             except Exception as e:
                 obj._lock()
                 raise e
             obj._lock()
             return retVal
-        return func(*args)
+        return func(*args, **kwargs)
     return _callable
 def _checkMethod(func, event=None, mustHaveArgs=0):
     if func is None: return
@@ -352,6 +352,20 @@ class WidgetGroup:
         for group in WidgetGroup._GROUPS:
             group.remove(widg)
 class Placer:
+    """
+    Places widgets:
+
+    Use as following example:
+
+    xPlacer = Placer(50)
+
+    .place(0, xPlacer.get(), 100, 50)
+    .place(0, xPlacer.get(), 100, 50)
+    .place(0, xPlacer.get(), 100, 50)
+    .place(0, xPlacer.get(), 100, 50)
+
+
+    """
     def __init__(self, ySpace, yStart=0):
         self._ySpace = ySpace
         self._yStart = yStart
@@ -402,6 +416,20 @@ class State:
     def __ne__(self, other):
         return self._state != other
 class Toggler:
+    """
+    calls hook with value.
+    toggles that value on each call.
+
+    Use as following example:
+
+    toggler = Toggler(print, initial=True)
+    .bind(toggler, ...)
+
+        True
+        False
+        ...
+
+    """
     def __init__(self, func:Callable, initial=False):
         self._func = func
         self._state = initial
@@ -412,6 +440,14 @@ class CustomRunnable:
     """
     Custom Runnable.
     It forces to pass exactly the augments that are given to the __init__.
+
+    Use as following example:
+
+    runnable = CustomRunnable(print, "hello")
+
+    runnable() or .bind(runnable, ...)
+
+        'hello'
     """
     def __init__(self, command, *args, **kwargs):
         self.args = args
