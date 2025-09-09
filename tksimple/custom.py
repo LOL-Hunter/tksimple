@@ -527,7 +527,7 @@ class TextEntry(LabelFrame):
         x = fixX if fixX is not None else 0
         y = fixY if fixY is not None else 0
         self.place(x, y, fixWidth, fixHeight)
-        super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, changeX, changeY, changeWidth, changeHeight)
+        super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, center, changeX, changeY, changeWidth, changeHeight)
         return self
     def setFg(self, col:Union[Color, str]):
         self.getEntry().setFg(col)
