@@ -438,7 +438,7 @@ class TextEntry(LabelFrame):
         
         self._entry = Entry(self, group)
         self._label = Label(self, group)
-    def updatePlace(self):
+    def updatePlace__(self):
         self._label._get().grid(row=0, column=0)
         self._entry._get().grid(row=0, column=1, sticky=Anchor.RIGHT.value)
     def getValue(self)->str:
@@ -567,6 +567,14 @@ class TextDropdownMenu(LabelFrame):
         """
         self.getDropdownMenu().setValue(str(v))
         return self
+    def setText(self, text:str):
+        """
+        Set the Label text.
+        @param text:
+        @return:
+        """
+        self.getLabel().setText(text)
+        return self
     def getLabel(self)->Label:
         """
         Returns the sub Label.
@@ -581,6 +589,9 @@ class TextDropdownMenu(LabelFrame):
         @return:
         """
         return self._dropdown
+    def clear(self):
+        self.getDropdownMenu().clear()
+        return self
     def setDisabled(self):
         """
         Disables the DropdownMenu.
@@ -594,6 +605,44 @@ class TextDropdownMenu(LabelFrame):
         @return:
         """
         self.getDropdownMenu().setEnabled()
+        return self
+    def place(self, x=0, y=0, width=None, height=25, anchor=Anchor.UP_LEFT, entryStartX=None):
+        """
+        @param x:
+        @param y:
+        @param width:
+        @param height:
+        @param anchor:
+        @param entryStartX: Use this to force lineup different Entrys
+        @return:
+        """
+        offset = 5
+        self._label.place(0, 0)
+        labelWidth = self._label.getWidth()
+        if entryStartX is not None: labelWidth = entryStartX
+        if width is None:
+            width = labelWidth+100
+            entryWidth = 100
+        else:
+            entryWidth = width - labelWidth
+        super().place(x, y, width, height)
+        self._label.place(0, 0, labelWidth, height-offset)
+        self._dropdown.place(labelWidth, 0, entryWidth-offset, height-offset)
+        return self
+    def placeRelative(self, fixX=None, fixY=None, fixWidth=None, fixHeight=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, center=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0):
+        assert fixWidth is not None and fixHeight is not None, "fixWidth and fixHeight must be defined!"
+        x = fixX if fixX is not None else 0
+        y = fixY if fixY is not None else 0
+        self.place(x, y, fixWidth, fixHeight)
+        super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, center, changeX, changeY, changeWidth, changeHeight)
+        return self
+    def setFg(self, col:Union[Color, str]):
+        self.getDropdownMenu().setFg(col)
+        self.getLabel().setFg(col)
+        return self
+    def setBg(self, col:Union[Color, str]):
+        self.getDropdownMenu().setBg(col)
+        self.getLabel().setBg(col)
         return self
 class _DndHandler:
     def __init__(self, canvas, _id, widget, widgetCreator):
