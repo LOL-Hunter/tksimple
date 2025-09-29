@@ -2674,6 +2674,7 @@ class Notebook(_ContainerWidget):
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+" or Tk instance not: "+str(_master.__class__.__name__))
 
         self._childWidgets = [] # All Tabs are stored here
+        self._tabByName = {}
 
         super().__init__(child=self,
                          widget=_ttk.Notebook(_master._get()),
@@ -2691,8 +2692,14 @@ class Notebook(_ContainerWidget):
         return self._widget.tab(self.getSelectedTabIndex(), "text")
     def getSelectedTab(self)->NotebookTab:
         return self._childWidgets[self.getSelectedTabIndex()]
+    def getTabByName(self, name:str)->NotebookTab | None:
+        if name in self._tabByName.keys():
+            return self._tabByName[name]
+        return None
     def createNewTab(self, name, group:WidgetGroup =None)->NotebookTab:
-        return NotebookTab(self, name, ifIsNone(group, self._group))
+        nbt = NotebookTab(self, name, ifIsNone(group, self._group))
+        self._tabByName[name] = nbt
+        return nbt
     def _decryptEvent(self, args, event):
         return self.getSelectedTab()
     def _selectTab(self, e:Event):
