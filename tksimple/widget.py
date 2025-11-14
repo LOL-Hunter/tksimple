@@ -563,9 +563,11 @@ class _ContainerWidget(_Widget):
     def place(self, x=None, y=None, width=None, height=None, anchor:Anchor=Anchor.UP_LEFT):
         super().place(x, y, width, height, anchor)
         self.updateRelativePlace()
+        return self._child
     def placeRelative(self, fixX:int=None, fixY:int=None, fixWidth:int=None, fixHeight:int=None, xOffset=0, yOffset=0, xOffsetLeft=0, xOffsetRight=0, yOffsetUp=0, yOffsetDown=0, stickRight=False, stickDown=False, centerY=False, centerX=False, center=False, changeX=0, changeY=0, changeWidth=0, changeHeight=0):
         super().placeRelative(fixX, fixY, fixWidth, fixHeight, xOffset, yOffset, xOffsetLeft, xOffsetRight, yOffsetUp, yOffsetDown, stickRight, stickDown, centerY, centerX, center, changeX, changeY, changeWidth, changeHeight)
         self.updateRelativePlace()
+        return self._child
     def __repr__(self):
         return str(self.__class__.__name__)+"("+str(self._childWidgets)+")"
 class _LockableWidget(_Widget):
@@ -826,7 +828,7 @@ class Checkbutton(_Widget):
     Widget:
     The Checkbutton a Label with a checkbox on the left.
     """
-    def __init__(self, _master, group:WidgetGroup =None):
+    def __init__(self, _master, group:WidgetGroup=None):
         if not _isinstanceAny(_master, Tk, NotebookTab, "Canvas", Frame, LabelFrame, _SubMenu):
             raise TKExceptions.InvalidWidgetTypeException("_master must be "+str(self.__class__.__name__)+" or Tk instance not: "+str(_master.__class__.__name__))
         self._instanceOfMenu = False
